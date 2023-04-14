@@ -17,9 +17,18 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description="Add URL to markdown files.")
     parser.add_argument("url", help="URL to be added.")
     parser.add_argument("-f", "--force", action="store_true", help="Force addition even if URL already exists.")
+    parser.add_argument("-e", "--edit", action="store_true", help="Open markdown file for editing.")
     args = parser.parse_args()
     args.url = args.url.replace('&', '\&')
+    if args.edit:
+        if "www.youtube.com" in args.url:
+            os.system(f"vim {YOUTUBE}")
+            sys.exit()
+        else:
+            os.system(f"vim {LINKS}")
+            sys.exit()
     return args
+
 
 
 def url_exists_in_file(url, file_path):

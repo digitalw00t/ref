@@ -31,13 +31,16 @@ def parse_arguments():
     return args
 
 
-
 def url_exists_in_file(url, file_path):
     with open(file_path, "r") as f:
         for line in f:
-            if url in line:
+            # Split the line into components based on '|'
+            components = line.split('|')
+            # Check if the URL is in the components
+            if url in components:
                 return True
     return False
+
 
 args = parse_arguments()
 URL = args.url

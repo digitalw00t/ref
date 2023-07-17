@@ -34,11 +34,13 @@ def parse_arguments():
 def url_exists_in_file(url, file_path):
     with open(file_path, "r") as f:
         for line in f:
-            # Split the line into components based on '|'
-            components = line.split('|')
-            # Check if the URL is in the components
-            if url in components:
-                return True
+            # Use regular expression to find URLs in the line
+            urls = re.findall(r'\[([^\]]+)\]', line)
+            for url_str in urls:
+                # Extract the URL from the Markdown link format [URL]
+                extracted_url = url_str.split(']')[0]
+                if url == extracted_url:
+                    return True
     return False
 
 

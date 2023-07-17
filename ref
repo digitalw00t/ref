@@ -16,20 +16,22 @@ LINKS = os.path.join(BASE, "references", "links.md")
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Add URL to markdown files.")
-    parser.add_argument("url", help="URL to be added.")
+    parser.add_argument("url", nargs='?', default=None, help="URL to be added.")
     parser.add_argument("-f", "--force", action="store_true", help="Force addition even if URL already exists.")
     parser.add_argument("-e", "--edit", action="store_true", help="Open markdown file for editing.")
     args = parser.parse_args()
-    args.url = args.url.replace('&', '\&')
-    if args.edit:
-        if "www.youtube.com" in args.url:
-            os.system(f"vim {YOUTUBE}")
-            sys.exit()
-        else:
-            os.system(f"vim {LINKS}")
-            sys.exit()
-    return args
 
+    if args.url:
+        args.url = args.url.replace('&', '\&')
+
+        if args.edit:
+            if "www.youtube.com" in args.url:
+                os.system(f"vim {YOUTUBE}")
+                sys.exit()
+            else:
+                os.system(f"vim {LINKS}")
+                sys.exit()
+    return args
 
 def url_exists_in_file(url, file_path):
     with open(file_path, "r") as f:
@@ -80,43 +82,63 @@ def get_title_from_url(url):
         return f"Error fetching title: {str(e)}"
 
 
-
-if "youtube.com" in URL:
-    playlist_id = re.search(r"list=(\w+)", URL)
-    
-    if playlist_id:
-        playlist_id = playlist_id.group(1)
-        playlist_url = f"https://www.youtube.com/watch?list={playlist_id}"
-        if not force and url_exists_in_file(playlist_url, YOUTUBE):
-            print(f"Error: Playlist URL {playlist_url} already recorded.")
-        else:
-            with open(YOUTUBE, "a") as f:
-                f.write(f"{today}|[{playlist_url}]|NO TITLE\n")
-            print(f"{today}|[{playlist_url}]|NO TITLE")
+def process_url(URL, force):
+    if "youtube.com" in URL:
+        playlist_id = re.search(r"list=(\w+)", URL)
         
-    else:
-        video_id, title, uploader = get_youtube_data(URL)
-        if video_id and title and uploader:
-            title = re.sub('[^0-9a-zA-Z]+', ' ', title) # Remove non-alphanumeric characters
-            title = " ".join(title.split()) # Remove extra spaces
-            video_url = f"https://www.youtube.com/watch?v={video_id}"
-            if not force and url_exists_in_file(video_url, YOUTUBE):
-                print(f"Error: Video URL {video_url} already recorded.")
+        if playlist_id:
+            playlist_id = playlist_id.group(1)
+            playlist_url = f"https://www.youtube.com/watch?list={playlist_id}"
+            if not force and url_exists_in_file(playlist_url, YOUTUBE):
+                print(f"Error: Playlist URL {playlist_url} already recorded.")
             else:
                 with open(YOUTUBE, "a") as f:
-                    f.write(f"{today}|[{video_url}]|({title})|{uploader}\n")
-                print(f"{today}|[{video_url}]|({title})|{uploader}")
+                    f.write(f"{today}|[{playlist_url}]|NO TITLE\n")
+                print(f"{today}|[{playlist_url}]|NO TITLE")
+            
         else:
-            print("Invalid YouTube URL")
+            video_id, title, uploader = get_youtube_data(URL)
+            if video_id and title and uploader:
+                title = re.sub('[^0-9a-zA-Z]+', ' ', title) # Remove non-alphanumeric characters
+                title = " ".join(title.split()) # Remove extra spaces
+                video_url = f"https://www.youtube.com/watch?v={video_id}"
+                if not force and url_exists_in_file(video_url, YOUTUBE):
+                    print(f"Error: Video URL {video_url} already recorded.")
+                else:
+                    with open(YOUTUBE, "a") as f:
+                        f.write(f"{today}|[{video_url}]|({title})|{uploader}\n")
+                    print(f"{today}|[{video_url}]|({title})|{uploader}")
+            else:
+                print("Invalid YouTube URL")
 
-else:
-    title = get_title_from_url(URL)
-    if title and not title.startswith("Error"):
-        if not force and url_exists_in_file(URL, LINKS):
-            print(f"Error: URL {URL} already recorded.")
-        else:
-            with open(LINKS, "a") as f:
-                f.write(f"{today}|[{URL}]|({title})\n")
-            print(f"{today}|[{URL}]|({title})")
     else:
-        print("Invalid URL")
+        title = get_title_from_url(URL)
+        if title and not title.startswith("Error"):
+            if not force and url_exists_in_file(URL, LINKS):
+                print(f"Error: URL {URL} already recorded.")
+            else:
+                with open(LINKS, "a") as f:
+                    f.write(f"{today}|[{URL}]|({title})\n")
+                print(f"{today}|[{URL}]|({title})")
+        else:
+            print("Invalid URL")
+
+def main():
+    try:
+        args = parse_arguments()
+        if args.url:
+            process_url(args.url, args.force)
+        else:
+            while True:
+                try:
+                    url = input("Enter a URL to record (or press Ctrl+C to quit): ")
+                    force = input("Force addition even if URL already exists? (y/n): ").lower() == 'y'
+                    process_url(url, force)
+                except Exception as e:
+                    print(f"An error occurred: {e}")
+    except KeyboardInterrupt:
+        print("\nExiting...")
+        sys.exit(0)
+
+if __name__ == "__main__":
+    main()

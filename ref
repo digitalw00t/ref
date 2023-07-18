@@ -2,7 +2,6 @@
 
 import os
 import re
-import json
 import sys
 import argparse
 from urllib.parse import urlparse
@@ -45,25 +44,11 @@ def url_exists_in_file(url, file_path):
                     return True
     return False
 
-
-args = parse_arguments()
-URL = args.url
-force = args.force
-today = date.today().strftime("%Y-%m-%d")
-
-def get_youtube_data(url):
-    video_id = re.search(r"v=([\w-]+)", url)
-    if video_id:
-        video_id = video_id.group(1)
-        api_url = f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json"
-        response = requests.get(api_url)
-        if response.status_code == 200:
-            data = response.json()
-            title = data["title"]
-            uploader = data["author_name"]
-            return video_id, title, uploader
-    return None, None, None
-
+def get_channel_name(url):
+    parsed_url = urlparse(url)
+    channel_path = parsed_url.path.rstrip('/')
+    channel_name = channel_path.split('/')[-1]
+    return channel_name
 
 def get_title_from_url(url):
     headers = {
@@ -81,45 +66,48 @@ def get_title_from_url(url):
     except Exception as e:
         return f"Error fetching title: {str(e)}"
 
-
-def process_url(URL, force):
-    if "youtube.com" in URL:
-        playlist_id = re.search(r"list=(\w+)", URL)
+def process_url(url, force):
+    if "youtube.com" in url:
+        channel_id = re.search(r"/(user|channel)/([\w-]+)", url)
         
-        if playlist_id:
-            playlist_id = playlist_id.group(1)
-            playlist_url = f"https://www.youtube.com/watch?list={playlist_id}"
-            if not force and url_exists_in_file(playlist_url, YOUTUBE):
-                print(f"Error: Playlist URL {playlist_url} already recorded.")
+        if channel_id:
+            channel_id = channel_id.group(2)
+            channel_url = f"https://www.youtube.com/{channel_id}"
+            if not force and url_exists_in_file(channel_url, YOUTUBE):
+                print(f"Error: Channel URL {channel_url} already recorded.")
             else:
-                with open(YOUTUBE, "a") as f:
-                    f.write(f"{today}|[{playlist_url}]|NO TITLE\n")
-                print(f"{today}|[{playlist_url}]|NO TITLE")
+                channel_name = get_channel_name(channel_url)
+                if channel_name:
+                    with open(YOUTUBE, "a") as f:
+                        f.write(f"{date.today()}|[{channel_url}]|Youtube Creator {channel_name}\n")
+                    print(f"{date.today()}|[{channel_url}]|Youtube Creator {channel_name}")
+                else:
+                    print("Invalid YouTube Channel URL")
             
         else:
-            video_id, title, uploader = get_youtube_data(URL)
+            video_id, title, uploader = get_youtube_data(url)
             if video_id and title and uploader:
-                title = re.sub('[^0-9a-zA-Z]+', ' ', title) # Remove non-alphanumeric characters
-                title = " ".join(title.split()) # Remove extra spaces
+                title = re.sub('[^0-9a-zA-Z]+', ' ', title)
+                title = " ".join(title.split())
                 video_url = f"https://www.youtube.com/watch?v={video_id}"
                 if not force and url_exists_in_file(video_url, YOUTUBE):
                     print(f"Error: Video URL {video_url} already recorded.")
                 else:
                     with open(YOUTUBE, "a") as f:
-                        f.write(f"{today}|[{video_url}]|({title})|{uploader}\n")
-                    print(f"{today}|[{video_url}]|({title})|{uploader}")
+                        f.write(f"{date.today()}|[{video_url}]|({title})|{uploader}\n")
+                    print(f"{date.today()}|[{video_url}]|({title})|{uploader}")
             else:
                 print("Invalid YouTube URL")
 
     else:
-        title = get_title_from_url(URL)
+        title = get_title_from_url(url)
         if title and not title.startswith("Error"):
-            if not force and url_exists_in_file(URL, LINKS):
-                print(f"Error: URL {URL} already recorded.")
+            if not force and url_exists_in_file(url, LINKS):
+                print(f"Error: URL {url} already recorded.")
             else:
                 with open(LINKS, "a") as f:
-                    f.write(f"{today}|[{URL}]|({title})\n")
-                print(f"{today}|[{URL}]|({title})")
+                    f.write(f"{date.today()}|[{url}]|({title})\n")
+                print(f"{date.today()}|[{url}]|({title})")
         else:
             print("Invalid URL")
 
@@ -142,3 +130,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

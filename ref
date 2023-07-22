@@ -1,4 +1,7 @@
 #!/usr/bin/python3
+# filename : ref
+# author : draeician (July 22, 2023)
+# purpose : to allow for fast cli recording from the command line for later reference
 
 import os
 import re
@@ -12,38 +15,34 @@ from urllib.parse import urlparse
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-# Load the .env file. This will add the variables in it to os.environ
 load_dotenv()
 
 YOUTUBE_API_SERVICE_NAME = 'youtube'
 YOUTUBE_API_VERSION = 'v3'
-#DEVELOPER_KEY = os.environ['YOUTUBE_API_KEY']
 DEVELOPER_KEY = os.getenv('YOUTUBE_API_KEY')
 
 if DEVELOPER_KEY is None:
-    # If the variable is not set, exit with an error message
     print('Error: YOUTUBE_API_KEY is not set in .env file or shell environment')
     exit(1)
-
 
 BASE = "/home/falgout"
 YOUTUBE = os.path.join(BASE, "references", "youtube_references.md")
 LINKS = os.path.join(BASE, "references", "links.md")
 
-def get_youtube_data(url):
+def get_youtube_data(url: str) -> tuple:
     youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, developerKey=DEVELOPER_KEY)
-    
     video_id = urlparse(url).query.split('v=')[-1]
-    video_response = youtube.videos().list(
-        part='snippet',
-        id=video_id
-    ).execute()
-
+    video_response = youtube.videos().list(part='snippet', id=video_id).execute()
     video_data = video_response['items'][0]['snippet']
-
     return video_id, video_data['title'], video_data['channelTitle']
 
-def parse_arguments():
+def append_to_file(file_path: str, line: str) -> None:
+    with open(file_path, "a") as f:
+        f.write(line)
+        f.flush()
+        os.fsync(f.fileno())
+
+def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Add URL to markdown files.")
     parser.add_argument("url", nargs='?', default=None, help="URL to be added.")
     parser.add_argument("-f", "--force", action="store_true", help="Force addition even if URL already exists.")
@@ -52,7 +51,6 @@ def parse_arguments():
 
     if args.url:
         args.url = args.url.replace('&', '\&')
-
         if args.edit:
             if "www.youtube.com" in args.url:
                 os.system(f"vim {YOUTUBE}")
@@ -62,29 +60,26 @@ def parse_arguments():
                 sys.exit()
     return args
 
-def url_exists_in_file(url, file_path):
+def url_exists_in_file(url: str, file_path: str) -> bool:
     with open(file_path, "r") as f:
         for line in f:
-            # Use regular expression to find URLs in the line
             urls = re.findall(r'\[([^\]]+)\]', line)
             for url_str in urls:
-                # Extract the URL from the Markdown link format [URL]
                 extracted_url = url_str.split(']')[0]
                 if url == extracted_url:
                     return True
     return False
 
-def get_channel_name(url):
+def get_channel_name(url: str) -> str:
     parsed_url = urlparse(url)
     channel_path = parsed_url.path.rstrip('/')
     channel_name = channel_path.split('/')[-1]
     return channel_name
 
-def get_title_from_url(url):
+def get_title_from_url(url: str) -> str:
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36'
     }
-    
     try:
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
@@ -96,52 +91,46 @@ def get_title_from_url(url):
     except Exception as e:
         return f"Error fetching title: {str(e)}"
 
-def process_url(url, force):
+def process_url(url: str, force: bool) -> None:
     if "youtube.com" in url:
         channel_id = re.search(r"/(user|channel)/([\w-]+)", url)
-        
         if channel_id:
             channel_id = channel_id.group(2)
             channel_url = f"https://www.youtube.com/{channel_id}"
-            if not force and url_exists_in_file(channel_url, YOUTUBE):
+            if url_exists_in_file(channel_url, YOUTUBE):
                 print(f"Error: Channel URL {channel_url} already recorded.")
             else:
                 channel_name = get_channel_name(channel_url)
                 if channel_name:
-                    with open(YOUTUBE, "a") as f:
-                        f.write(f"{date.today()}|[{channel_url}]|Youtube Creator {channel_name}\n")
+                    append_to_file(YOUTUBE, f"{date.today()}|[{channel_url}]|Youtube Creator {channel_name}\n")
                     print(f"{date.today()}|[{channel_url}]|Youtube Creator {channel_name}")
                 else:
                     print("Invalid YouTube Channel URL")
-            
         else:
             video_id, title, uploader = get_youtube_data(url)
             if video_id and title and uploader:
                 title = re.sub('[^0-9a-zA-Z]+', ' ', title)
                 title = " ".join(title.split())
                 video_url = f"https://www.youtube.com/watch?v={video_id}"
-                if not force and url_exists_in_file(video_url, YOUTUBE):
+                if url_exists_in_file(video_url, YOUTUBE):
                     print(f"Error: Video URL {video_url} already recorded.")
                 else:
-                    with open(YOUTUBE, "a") as f:
-                        f.write(f"{date.today()}|[{video_url}]|({title})|{uploader}\n")
+                    append_to_file(YOUTUBE, f"{date.today()}|[{video_url}]|({title})|{uploader}\n")
                     print(f"{date.today()}|[{video_url}]|({title})|{uploader}")
             else:
                 print("Invalid YouTube URL")
-
     else:
         title = get_title_from_url(url)
         if title and not title.startswith("Error"):
-            if not force and url_exists_in_file(url, LINKS):
+            if url_exists_in_file(url, LINKS):
                 print(f"Error: URL {url} already recorded.")
             else:
-                with open(LINKS, "a") as f:
-                    f.write(f"{date.today()}|[{url}]|({title})\n")
+                append_to_file(LINKS, f"{date.today()}|[{url}]|({title})\n")
                 print(f"{date.today()}|[{url}]|({title})")
         else:
             print("Invalid URL")
 
-def main():
+def main() -> None:
     try:
         args = parse_arguments()
         if args.url:
@@ -150,8 +139,7 @@ def main():
             while True:
                 try:
                     url = input("Enter a URL to record (or press Ctrl+C to quit): ")
-                    force = 'n'
-#                    force = input("Force addition even if URL already exists? (y/n): ").lower() == 'y'
+                    force = False
                     process_url(url, force)
                 except Exception as e:
                     print(f"An error occurred: {e}")

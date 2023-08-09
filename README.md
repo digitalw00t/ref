@@ -1,5 +1,3 @@
-Certainly, here's an updated README for your Python script reflecting the recent changes:
-
 ```markdown
 # URL Reference Tool
 
@@ -39,12 +37,13 @@ This is a command-line tool written in Python for adding URLs to markdown files.
 To use the URL reference tool, run the following command:
 
 ```shell
-python ref.py <url> [-f] [-e]
+python ref.py <url> [-f] [-e] [--version]
 ```
 
 `<url>`: The URL to be added.
 `-f`, `--force`: Force addition even if the URL already exists.
 `-e`, `--edit`: Open the markdown file for editing.
+`--version`: Display the version of the URL reference tool.
 
 Examples:
 
@@ -53,6 +52,7 @@ python ref.py https://www.youtube.com/watch?v=abcdefgh  # Add a YouTube video UR
 python ref.py https://www.example.com  # Add a general URL
 python ref.py -f https://www.example.com  # Force addition of a URL even if it already exists
 python ref.py -e https://www.youtube.com/@username  # Open the YouTube references file for editing
+python ref.py --version  # Display the version of the URL reference tool
 ```
 
 ## File Structure
@@ -70,5 +70,3 @@ Contributions to this URL reference tool are welcome! Feel free to open issues o
 
 This project is licensed under the MIT License.
 ```
-
-You can save this content into a file named `README.md` in the root directory of your Git repository. This README provides an overview of your project, its features, and how to use it. It also includes a section on how to contribute to your project and the license under which your project is available.

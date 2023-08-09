@@ -15,7 +15,7 @@ from urllib.parse import urlparse
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-__VERSION__ = "v1.0.0"
+__VERSION__ = "v1.0.0-1-g7c517c8"
 
 load_dotenv()
 

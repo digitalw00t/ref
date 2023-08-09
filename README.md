@@ -1,6 +1,9 @@
+Certainly, here's an updated README for your Python script reflecting the recent changes:
+
+```markdown
 # URL Reference Tool
 
-This is a command-line tool written in Python for adding URLs to markdown files. It allows you to easily record URLs along with their metadata, such as title and date, in separate Markdown files.
+This is a command-line tool written in Python for adding URLs to markdown files. It allows you to easily record URLs along with their metadata, such as title and date, in separate Markdown files. The updated version of this tool includes improved error handling, cleaner and more concise code, and better user interaction.
 
 ## Features
 
@@ -9,6 +12,7 @@ This is a command-line tool written in Python for adding URLs to markdown files.
 - Fetches title information from the webpage for general URLs.
 - Handles duplicate URL prevention based on existing records.
 - Markdown files are organized based on URL type: `youtube_references.md` for YouTube-related URLs and `links.md` for general URLs.
+- Improved error handling and user experience.
 
 ## Requirements
 
@@ -23,42 +27,48 @@ This is a command-line tool written in Python for adding URLs to markdown files.
    ```shell
    git clone <repository-url>
    cd ref-program
+   ```
 
-Install the required dependencies:
-shell
-Copy code
-pip install -r requirements.txt
-Usage
+2. Install the required dependencies:
+   ```shell
+   pip install -r requirements.txt
+   ```
+
+## Usage
+
 To use the URL reference tool, run the following command:
 
-shell
-Copy code
+```shell
 python ref.py <url> [-f] [-e]
-<url>: The URL to be added.
--f, --force: Force addition even if the URL already exists.
--e, --edit: Open the markdown file for editing.
+```
+
+`<url>`: The URL to be added.
+`-f`, `--force`: Force addition even if the URL already exists.
+`-e`, `--edit`: Open the markdown file for editing.
+
 Examples:
 
-shell
-Copy code
+```shell
 python ref.py https://www.youtube.com/watch?v=abcdefgh  # Add a YouTube video URL
 python ref.py https://www.example.com  # Add a general URL
 python ref.py -f https://www.example.com  # Force addition of a URL even if it already exists
 python ref.py -e https://www.youtube.com/@username  # Open the YouTube references file for editing
-File Structure
-ref.py: The main Python script for the URL reference tool.
-references/: Directory containing the markdown files.
-youtube_references.md: Markdown file for recording YouTube-related URLs.
-links.md: Markdown file for recording general URLs.
-Contributing
+```
+
+## File Structure
+
+`ref.py`: The main Python script for the URL reference tool.
+`references/`: Directory containing the markdown files.
+`youtube_references.md`: Markdown file for recording YouTube-related URLs.
+`links.md`: Markdown file for recording general URLs.
+
+## Contributing
+
 Contributions to this URL reference tool are welcome! Feel free to open issues or submit pull requests for any enhancements, bug fixes, or additional features.
 
-License
+## License
+
 This project is licensed under the MIT License.
+```
 
-css
-Copy code
-
-You can save the above content into a file named `README.md` in the root directory of your Git repository. Feel free to modify and customize the generated README to fit your specific needs.
-
-
+You can save this content into a file named `README.md` in the root directory of your Git repository. This README provides an overview of your project, its features, and how to use it. It also includes a section on how to contribute to your project and the license under which your project is available.

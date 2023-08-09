@@ -15,6 +15,8 @@ from urllib.parse import urlparse
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
+__VERSION__ = "v1.0.0"
+
 load_dotenv()
 
 YOUTUBE_API_SERVICE_NAME = 'youtube'
@@ -47,6 +49,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("url", nargs='?', default=None, help="URL to be added.")
     parser.add_argument("-f", "--force", action="store_true", help="Force addition even if URL already exists.")
     parser.add_argument("-e", "--edit", action="store_true", help="Open markdown file for editing.")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__VERSION__}") # Added line for --version
     args = parser.parse_args()
 
     if args.url:

@@ -15,18 +15,37 @@ from urllib.parse import urlparse
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-__VERSION__ = "v1.2.0"
+__VERSION__ = "v1.3.0"
 
-load_dotenv()
+# Adjust the following line to point to the actual location of your .env file
+env_path = os.path.join(os.path.expanduser("~"), '.env')
+load_dotenv(dotenv_path=env_path)
+#load_dotenv()
 
 YOUTUBE_API_SERVICE_NAME = 'youtube'
 YOUTUBE_API_VERSION = 'v3'
+
+# Check for yt api key - offer to set if None
+from dotenv import set_key
+def set_developer_key():
+    key = input("Please enter your YOUTUBE_API_KEY: ")
+    os.environ['YOUTUBE_API_KEY'] = key
+#`    env_path = os.path.join(BASE, '.env') # Modify this to point to your .env file
+    set_key(env_path, 'YOUTUBE_API_KEY', key)
+    print("YOUTUBE_API_KEY set successfully!")
+
 DEVELOPER_KEY = os.getenv('YOUTUBE_API_KEY')
 
 if DEVELOPER_KEY is None:
-    print('Error: YOUTUBE_API_KEY is not set in .env file or shell environment')
-    exit(1)
+    print('Error: YOUTUBE_API_KEY is not set in .env file or shell environment.')
+    choice = input('Would you like to set it now? (yes/no): ')
 
+    if choice.lower() == 'yes':
+        set_developer_key()
+else:
+    # print if debug is set
+    if os.getenv('DEBUG') == 'True':
+        print('YOUTUBE_API_KEY is set.')
 
 # Replace with the user's home directory
 BASE = os.path.expanduser("~/")
@@ -41,29 +60,41 @@ def get_youtube_data(url: str) -> tuple:
     video_data = video_response['items'][0]['snippet']
     return video_id, video_data['title'], video_data['channelTitle']
 
+def ensure_path_exists(file_path: str):
+    directory = os.path.dirname(file_path)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    if not os.path.exists(file_path):
+        open(file_path, 'w').close()
+
 def append_to_file(file_path: str, line: str) -> None:
+    ensure_path_exists(file_path)
     with open(file_path, "a") as f:
         f.write(line)
         f.flush()
         os.fsync(f.fileno())
 
+# took a stab at jiggering this around so that --edit is a special case and we don't process the url instead
 def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Add URL to markdown files.")
     parser.add_argument("url", nargs='?', default=None, help="URL to be added.")
     parser.add_argument("-f", "--force", action="store_true", help="Force addition even if URL already exists.")
     parser.add_argument("-e", "--edit", action="store_true", help="Open markdown file for editing.")
-    parser.add_argument("--version", action="version", version=f"%(prog)s {__VERSION__}") # Added line for --version
+    parser.add_argument("-d", "--debug", action="store_true", help="Print debug information.")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__VERSION__}") 
     args = parser.parse_args()
+
+    if args.edit:
+        if args.url and "www.youtube.com" in args.url:
+            os.system(f"vim {YOUTUBE}")
+            sys.exit()
+        else:
+            os.system(f"vim {LINKS}")
+            sys.exit()
 
     if args.url:
         args.url = args.url.replace('&', '\&')
-        if args.edit:
-            if "www.youtube.com" in args.url:
-                os.system(f"vim {YOUTUBE}")
-                sys.exit()
-            else:
-                os.system(f"vim {LINKS}")
-                sys.exit()
+
     return args
 
 def url_exists_in_file(url: str, file_path: str) -> bool:
@@ -137,6 +168,8 @@ def process_url(url: str, force: bool) -> None:
             print("Invalid URL")
 
 def main() -> None:
+    ensure_path_exists(YOUTUBE)
+    ensure_path_exists(LINKS)
     try:
         args = parse_arguments()
         if args.url:

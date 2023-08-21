@@ -8,6 +8,7 @@ import re
 import sys
 import requests
 import argparse
+import warnings
 from datetime import date
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
@@ -15,7 +16,19 @@ from urllib.parse import urlparse
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-__VERSION__ = "v1.3.0"
+import urllib3
+import chardet
+import charset_normalizer
+
+urllib3.__version__ = '2.0.4'
+chardet.__version__ = '5.2.0'
+charset_normalizer.__version__ = '3.2.0'
+
+
+__VERSION__ = "v1.3.1"
+
+# Filter out the RequestsDependencyWarning
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="urllib3")
 
 # Adjust the following line to point to the actual location of your .env file
 env_path = os.path.join(os.path.expanduser("~"), '.env')

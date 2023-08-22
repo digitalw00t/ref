@@ -25,7 +25,7 @@ chardet.__version__ = '5.2.0'
 charset_normalizer.__version__ = '3.2.0'
 
 
-__VERSION__ = "v1.3.1"
+__VERSION__ = "v1.4.0"
 
 # Filter out the RequestsDependencyWarning
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="urllib3")

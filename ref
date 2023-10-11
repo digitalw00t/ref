@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # filename : ref
 # author : draeician (July 22, 2023)
 # purpose : to allow for fast cli recording from the command line for later reference
@@ -20,11 +20,9 @@ import charset_normalizer
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
-
 urllib3.__version__ = '2.0.4'
 chardet.__version__ = '5.2.0'
 charset_normalizer.__version__ = '3.2.0'
-
 
 __VERSION__ = "v1.4.0"
 
@@ -38,6 +36,28 @@ load_dotenv(dotenv_path=env_path)
 
 YOUTUBE_API_SERVICE_NAME = 'youtube'
 YOUTUBE_API_VERSION = 'v3'
+
+def check_integrity():
+    errors = []
+
+    # Check links.md integrity
+    with open(LINKS, "r") as file:
+        for line_number, line in enumerate(file, start=1):
+            # Check for valid markdown link format
+            if not re.match(r'^- \[.*\]\(.*\)( \(.*\))?\n$', line):
+                expected_line = f'- [Link Text](URL) (Description)'
+                errors.append((f"links.md", line_number, line.strip(), expected_line))
+
+    # Check youtube_references.md integrity
+    with open(YOUTUBE, "r") as file:
+        for line_number, line in enumerate(file, start=1):
+            # Check for valid markdown link format
+            if not re.match(r'^.*\|.*\|.*\n$', line):
+                expected_line = f'{date.today()}|[URL]|[Title]|(Uploader)'
+                errors.append((f"youtube_references.md", line_number, line.strip(), expected_line))
+
+    return errors
+
 
 # Check for yt api key - offer to set if None
 from dotenv import set_key
@@ -95,6 +115,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("-f", "--force", action="store_true", help="Force addition even if URL already exists.")
     parser.add_argument("-e", "--edit", action="store_true", help="Open markdown file for editing.")
     parser.add_argument("-d", "--debug", action="store_true", help="Print debug information.")
+    parser.add_argument("--integrity", action="store_true", help="Check the integrity of log files.")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__VERSION__}") 
     args = parser.parse_args()
 
@@ -184,9 +205,20 @@ def process_url(url: str, force: bool) -> None:
 def main() -> None:
     ensure_path_exists(YOUTUBE)
     ensure_path_exists(LINKS)
+
     try:
         args = parse_arguments()
-        if args.url:
+
+        if args.integrity:
+            integrity_errors = check_integrity()
+            if integrity_errors:
+                print("Integrity check failed:")
+                for error in integrity_errors:
+                    file_name, line_number, line_contents = error
+                    print(f"{file_name} line {line_number}: {line_contents}")
+            else:
+                print("Integrity check passed. Log files are formatted correctly.")
+        elif args.url:
             process_url(args.url, args.force)
         else:
             while True:

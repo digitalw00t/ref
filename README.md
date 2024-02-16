@@ -48,19 +48,19 @@ python ref.py <url> [-f] [-e] [--version]
 Examples:
 
 ```shell
-python ref.py https://www.youtube.com/watch?v=abcdefgh  # Add a YouTube video URL
-python ref.py https://www.example.com  # Add a general URL
-python ref.py -f https://www.example.com  # Force addition of a URL even if it already exists
-python ref.py -e https://www.youtube.com/@username  # Open the YouTube references file for editing
-python ref.py --version  # Display the version of the URL reference tool
+ref.py https://www.youtube.com/watch?v=abcdefgh  # Add a YouTube video URL
+ref.py https://www.example.com  # Add a general URL
+ref.py -f https://www.example.com  # Force addition of a URL even if it already exists
+ref.py -e https://www.youtube.com/@username  # Open the YouTube references file for editing
+ref.py --version  # Display the version of the URL reference tool
 ```
 
 ## File Structure
 
 `ref.py`: The main Python script for the URL reference tool.
 `references/`: Directory containing the markdown files.
-`youtube_references.md`: Markdown file for recording YouTube-related URLs.
-`links.md`: Markdown file for recording general URLs.
+`references/youtube_references.md`: Markdown file for recording YouTube-related URLs.
+`references/links.md`: Markdown file for recording general URLs.
 
 ## Contributing
 

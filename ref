@@ -3,6 +3,7 @@
 # author : draeician (July 22, 2023)
 # purpose : to allow for fast cli recording from the command line for later reference
 
+import readline
 import os
 import re
 import sys

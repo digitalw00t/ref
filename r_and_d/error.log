@@ -1,0 +1,226 @@
+ERROR: 2023-04-11|[
+/bin/sh: 1: [: missing ]
+Exception ignored in: <_io.TextIOWrapper name='<stdout>' mode='w' encoding='utf-8'>
+BrokenPipeError: [Errno 32] Broken pipe
+ERROR: https://mud.fandom.com/wiki/MUF_(programming_language)
+/bin/sh: 1: Syntax error: "(" unexpected
+ERROR: https://www.youtube.com/watch?v=yWRkc_E9CYg&list=PLE50-dh6JzC6dHxpAno-a6W7QpWdAFN20
+Traceback (most recent call last):
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 216, in <module>
+    main()
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 201, in main
+    process_url(args.url, args.force)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 156, in process_url
+    video_id, title, uploader = get_youtube_data(url)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 85, in get_youtube_data
+    video_data = video_response['items'][0]['snippet']
+IndexError: list index out of range
+ERROR: https://www.youtube.com/watch?v=https://www.youtube.com/watch?v=NSLm__BUnmI
+Traceback (most recent call last):
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 216, in <module>
+    main()
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 201, in main
+    process_url(args.url, args.force)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 156, in process_url
+    video_id, title, uploader = get_youtube_data(url)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 85, in get_youtube_data
+    video_data = video_response['items'][0]['snippet']
+IndexError: list index out of range
+ERROR: https://www.youtube.com/watch?v=https://www.youtube.com/watch?v=KsgRl8OoLmQ
+Traceback (most recent call last):
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 216, in <module>
+    main()
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 201, in main
+    process_url(args.url, args.force)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 156, in process_url
+    video_id, title, uploader = get_youtube_data(url)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 85, in get_youtube_data
+    video_data = video_response['items'][0]['snippet']
+IndexError: list index out of range
+ERROR: https://www.youtube.com/watch?v=https://www.youtube.com/watch?v=NSLm__BUnmI
+Traceback (most recent call last):
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 216, in <module>
+    main()
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 201, in main
+    process_url(args.url, args.force)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 156, in process_url
+    video_id, title, uploader = get_youtube_data(url)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 85, in get_youtube_data
+    video_data = video_response['items'][0]['snippet']
+IndexError: list index out of range
+ERROR: https://www.youtube.com/watch?v=https://www.youtube.com/watch?v=C75TROiiEa0
+Traceback (most recent call last):
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 216, in <module>
+    main()
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 201, in main
+    process_url(args.url, args.force)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 156, in process_url
+    video_id, title, uploader = get_youtube_data(url)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 85, in get_youtube_data
+    video_data = video_response['items'][0]['snippet']
+IndexError: list index out of range
+ERROR: https://www.youtube.com/watch?v=https://www.youtube.com/watch?v=kqzI91YIfmw
+Traceback (most recent call last):
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 216, in <module>
+    main()
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 201, in main
+    process_url(args.url, args.force)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 156, in process_url
+    video_id, title, uploader = get_youtube_data(url)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 85, in get_youtube_data
+    video_data = video_response['items'][0]['snippet']
+IndexError: list index out of range
+ERROR: https://www.youtube.com/watch?v=https://www.youtube.com/watch?v=GPqSoiOP3w8
+Traceback (most recent call last):
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 216, in <module>
+    main()
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 201, in main
+    process_url(args.url, args.force)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 156, in process_url
+    video_id, title, uploader = get_youtube_data(url)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 85, in get_youtube_data
+    video_data = video_response['items'][0]['snippet']
+IndexError: list index out of range
+ERROR: https://www.youtube.com/watch?v=https://www.youtube.com/watch?v=C75TROiiEa0
+Traceback (most recent call last):
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 216, in <module>
+    main()
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 201, in main
+    process_url(args.url, args.force)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 156, in process_url
+    video_id, title, uploader = get_youtube_data(url)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 85, in get_youtube_data
+    video_data = video_response['items'][0]['snippet']
+IndexError: list index out of range
+ERROR: https://www.youtube.com/watch?v=https://www.youtube.com/watch?v=5ddjiXIp32c
+Traceback (most recent call last):
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 216, in <module>
+    main()
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 201, in main
+    process_url(args.url, args.force)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 156, in process_url
+    video_id, title, uploader = get_youtube_data(url)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 85, in get_youtube_data
+    video_data = video_response['items'][0]['snippet']
+IndexError: list index out of range
+ERROR: https://www.youtube.com/watch?v=https://www.youtube.com/watch?v=C75TROiiEa0
+Traceback (most recent call last):
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 216, in <module>
+    main()
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 201, in main
+    process_url(args.url, args.force)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 156, in process_url
+    video_id, title, uploader = get_youtube_data(url)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 85, in get_youtube_data
+    video_data = video_response['items'][0]['snippet']
+IndexError: list index out of range
+ERROR: https://www.youtube.com/watch?v=https://www.youtube.com/watch?v=6MI0f6YjJIk
+Traceback (most recent call last):
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 216, in <module>
+    main()
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 201, in main
+    process_url(args.url, args.force)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 156, in process_url
+    video_id, title, uploader = get_youtube_data(url)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 85, in get_youtube_data
+    video_data = video_response['items'][0]['snippet']
+IndexError: list index out of range
+ERROR: https://www.youtube.com/watch?v=https://www.youtube.com/watch?v=5ddjiXIp32c
+Traceback (most recent call last):
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 216, in <module>
+    main()
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 201, in main
+    process_url(args.url, args.force)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 156, in process_url
+    video_id, title, uploader = get_youtube_data(url)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 85, in get_youtube_data
+    video_data = video_response['items'][0]['snippet']
+IndexError: list index out of range
+ERROR: https://www.youtube.com/watch?v=https://www.youtube.com/watch?v=Orl6wlFmtBg
+Traceback (most recent call last):
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 216, in <module>
+    main()
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 201, in main
+    process_url(args.url, args.force)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 156, in process_url
+    video_id, title, uploader = get_youtube_data(url)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 85, in get_youtube_data
+    video_data = video_response['items'][0]['snippet']
+IndexError: list index out of range
+ERROR: https://www.youtube.com/watch?v=ydjRYmM19DY&list=PL2V6IBDeR5YMPouQhwyfaen2abXDnAzLa
+Traceback (most recent call last):
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 216, in <module>
+    main()
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 201, in main
+    process_url(args.url, args.force)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 156, in process_url
+    video_id, title, uploader = get_youtube_data(url)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 85, in get_youtube_data
+    video_data = video_response['items'][0]['snippet']
+IndexError: list index out of range
+ERROR: https://www.youtube.com/watch?v=SwqusllMCnE&list=PLIUOU7oqGTLhVhDjEuUhMCdJJX9fTMBVZ
+Traceback (most recent call last):
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 216, in <module>
+    main()
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 201, in main
+    process_url(args.url, args.force)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 156, in process_url
+    video_id, title, uploader = get_youtube_data(url)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 85, in get_youtube_data
+    video_data = video_response['items'][0]['snippet']
+IndexError: list index out of range
+ERROR: https://www.youtube.com/watch?v=DYOU_Z0hAwo&list=PLXsFtK46HZxUQERRbOmuGoqbMD-KWLkOS
+Traceback (most recent call last):
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 216, in <module>
+    main()
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 201, in main
+    process_url(args.url, args.force)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 156, in process_url
+    video_id, title, uploader = get_youtube_data(url)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 85, in get_youtube_data
+    video_data = video_response['items'][0]['snippet']
+IndexError: list index out of range
+ERROR: https://www.youtube.com/watch?v=DYOU_Z0hAwo&list=PLXsFtK46HZxUQERRbOmuGoqbMD-KWLkOS
+Traceback (most recent call last):
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 216, in <module>
+    main()
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 201, in main
+    process_url(args.url, args.force)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 156, in process_url
+    video_id, title, uploader = get_youtube_data(url)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 85, in get_youtube_data
+    video_data = video_response['items'][0]['snippet']
+IndexError: list index out of range
+ERROR: https://www.youtube.com/watch?v=_JXbvSTGPoo&list=PLkCVZ6KlTpA-EsUUveONUTaKsOuM0v3g_
+Traceback (most recent call last):
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 216, in <module>
+    main()
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 201, in main
+    process_url(args.url, args.force)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 156, in process_url
+    video_id, title, uploader = get_youtube_data(url)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 85, in get_youtube_data
+    video_data = video_response['items'][0]['snippet']
+IndexError: list index out of range
+ERROR: https://www.youtube.com/watch?v=AbB33AxrcZo&list=PLIF38owJLhR1EGDY4kOnsEnMyolZgza1x
+Traceback (most recent call last):
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 216, in <module>
+    main()
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 201, in main
+    process_url(args.url, args.force)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 156, in process_url
+    video_id, title, uploader = get_youtube_data(url)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 85, in get_youtube_data
+    video_data = video_response['items'][0]['snippet']
+IndexError: list index out of range
+ERROR: https://www.youtube.com/watch?v=4hkDPrl49KI&list=PL8M3WAF7vWyoJ28CLRSDFbdCfFmIdKyCt
+Traceback (most recent call last):
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 216, in <module>
+    main()
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 201, in main
+    process_url(args.url, args.force)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 156, in process_url
+    video_id, title, uploader = get_youtube_data(url)
+  File "/home/draeician/git/personal/ref/r_and_d/./ref6", line 85, in get_youtube_data
+    video_data = video_response['items'][0]['snippet']
+IndexError: list index out of range

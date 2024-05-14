@@ -1,0 +1,40 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_OUTPUT_EXCMD	mixed	/number, pattern, mixed, or combineV2/
+!_TAG_OUTPUT_FILESEP	slash	/slash or backslash/
+!_TAG_OUTPUT_MODE	u-ctags	/u-ctags or e-ctags/
+!_TAG_PATTERN_LENGTH_LIMIT	96	/0 for no limit/
+!_TAG_PROC_CWD	/home/draeician/git/personal/ref/	//
+!_TAG_PROGRAM_AUTHOR	Universal Ctags Team	//
+!_TAG_PROGRAM_NAME	Universal Ctags	/Derived from Exuberant Ctags/
+!_TAG_PROGRAM_URL	https://ctags.io/	/official site/
+!_TAG_PROGRAM_VERSION	5.9.0	//
+BASE	ref	/^BASE = os.path.expanduser("~\/")$/;"	v
+Contributing	README.md	/^## Contributing$/;"	s
+DEVELOPER_KEY	ref	/^DEVELOPER_KEY = os.getenv('YOUTUBE_API_KEY')$/;"	v
+File Structure	README.md	/^## File Structure$/;"	s
+LINKS	ref	/^LINKS = os.path.join(BASE, "references", "links.md")$/;"	v
+License	README.md	/^## License$/;"	s
+Usage	README.md	/^## Usage$/;"	s
+YOUTUBE	ref	/^YOUTUBE = os.path.join(BASE, "references", "youtube_references.md")$/;"	v
+YOUTUBE_API_SERVICE_NAME	ref	/^YOUTUBE_API_SERVICE_NAME = 'youtube'$/;"	v
+YOUTUBE_API_VERSION	ref	/^YOUTUBE_API_VERSION = 'v3'$/;"	v
+__VERSION__	ref	/^__VERSION__ = "v1.4.0"$/;"	v
+append_to_file	ref	/^def append_to_file(file_path: str, line: str) -> None:$/;"	f	typeref:typename:None
+check_integrity	ref	/^def check_integrity():$/;"	f
+choice	ref	/^    choice = input('Would you like to set it now? (yes\/no): ')$/;"	v
+combined_file_path	merger.py	/^combined_file_path = os.path.expanduser("~\/path\/to\/your\/combined_references.md")  # Update t/;"	v
+ensure_path_exists	ref	/^def ensure_path_exists(file_path: str):$/;"	f
+env_path	ref	/^env_path = os.path.join(os.path.expanduser("~"), '.env')$/;"	v
+get_channel_name	ref	/^def get_channel_name(url: str) -> str:$/;"	f	typeref:typename:str
+get_current_iso_timestamp	merger.py	/^def get_current_iso_timestamp():$/;"	f
+get_title_from_url	ref	/^def get_title_from_url(url: str) -> str:$/;"	f	typeref:typename:str
+get_youtube_data	ref	/^def get_youtube_data(url: str) -> tuple:$/;"	f	typeref:typename:tuple
+links_file_path	merger.py	/^links_file_path = os.path.expanduser("~\/path\/to\/your\/links.md")  # Update this path$/;"	v
+main	ref	/^def main() -> None:$/;"	f	typeref:typename:None
+parse_arguments	ref	/^def parse_arguments() -> argparse.Namespace:$/;"	f	typeref:typename:argparse.Namespace
+process_url	ref	/^def process_url(url: str, force: bool) -> None:$/;"	f	typeref:typename:None
+read_links	merger.py	/^def read_links():$/;"	f
+set_developer_key	ref	/^def set_developer_key():$/;"	f
+url_exists_in_file	ref	/^def url_exists_in_file(url: str, file_path: str) -> bool:$/;"	f	typeref:typename:bool
+youtube_file_path	merger.py	/^youtube_file_path = os.path.expanduser("~\/path\/to\/your\/youtube_references.md")  # Update thi/;"	v

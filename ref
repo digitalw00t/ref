@@ -10,22 +10,23 @@ import sys
 import requests
 import argparse
 import warnings
-from datetime import date
-from urllib.parse import urlparse
+from datetime import datetime
+from urllib.parse import urlparse, parse_qs
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+import logging
 
 import urllib3
 import chardet
 import charset_normalizer
 from bs4 import BeautifulSoup
-from dotenv import load_dotenv
+from dotenv import load_dotenv, set_key
 
 urllib3.__version__ = '2.0.4'
 chardet.__version__ = '5.2.0'
 charset_normalizer.__version__ = '3.2.0'
 
-__VERSION__ = "v1.4.0"
+__VERSION__ = "v1.4.1"
 
 # Filter out the RequestsDependencyWarning
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="urllib3")
@@ -33,39 +34,27 @@ warnings.filterwarnings("ignore", category=DeprecationWarning, module="urllib3")
 # Adjust the following line to point to the actual location of your .env file
 env_path = os.path.join(os.path.expanduser("~"), '.env')
 load_dotenv(dotenv_path=env_path)
-#load_dotenv()
 
 YOUTUBE_API_SERVICE_NAME = 'youtube'
 YOUTUBE_API_VERSION = 'v3'
 
+# Set up logging
+logging.basicConfig(filename='ref.log', level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(message)s')
+
 def check_integrity():
     errors = []
 
-    # Check links.md integrity
-    with open(LINKS, "r") as file:
+    with open(UNIFIED, "r") as file:
         for line_number, line in enumerate(file, start=1):
-            # Check for valid markdown link format
-            if not re.match(r'^- \[.*\]\(.*\)( \(.*\))?\n$', line):
-                expected_line = f'- [Link Text](URL) (Description)'
-                errors.append((f"links.md", line_number, line.strip(), expected_line))
-
-    # Check youtube_references.md integrity
-    with open(YOUTUBE, "r") as file:
-        for line_number, line in enumerate(file, start=1):
-            # Check for valid markdown link format
-            if not re.match(r'^.*\|.*\|.*\n$', line):
-                expected_line = f'{date.today()}|[URL]|[Title]|(Uploader)'
-                errors.append((f"youtube_references.md", line_number, line.strip(), expected_line))
+            if not re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\|\[.*\]\(.*\)\|\(.*\)\|.*\|(YouTube|General)\n$', line):
+                expected_line = f'{datetime.now().isoformat()}|[URL]|(Title)|Source|(YouTube|General)'
+                errors.append((f"references.md", line_number, line.strip(), expected_line))
 
     return errors
 
-
-# Check for yt api key - offer to set if None
-from dotenv import set_key
 def set_developer_key():
     key = input("Please enter your YOUTUBE_API_KEY: ")
     os.environ['YOUTUBE_API_KEY'] = key
-#`    env_path = os.path.join(BASE, '.env') # Modify this to point to your .env file
     set_key(env_path, 'YOUTUBE_API_KEY', key)
     print("YOUTUBE_API_KEY set successfully!")
 
@@ -78,22 +67,55 @@ if DEVELOPER_KEY is None:
     if choice.lower() == 'yes':
         set_developer_key()
 else:
-    # print if debug is set
     if os.getenv('DEBUG') == 'True':
         print('YOUTUBE_API_KEY is set.')
 
-# Replace with the user's home directory
 BASE = os.path.expanduser("~/")
-
-YOUTUBE = os.path.join(BASE, "references", "youtube_references.md")
-LINKS = os.path.join(BASE, "references", "links.md")
+UNIFIED = os.path.join(BASE, "references", "references.md")
 
 def get_youtube_data(url: str) -> tuple:
     youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, developerKey=DEVELOPER_KEY)
-    video_id = urlparse(url).query.split('v=')[-1]
+    parsed_url = urlparse(url)
+    query_params = parse_qs(parsed_url.query)
+
+    # Check if the URL is a playlist
+    if 'list' in query_params:
+        return get_youtube_playlist_data(query_params['list'][0], youtube)
+    
+    video_id = query_params.get('v')
+    if video_id:
+        video_id = video_id[0]
+    else:
+        raise ValueError("Invalid YouTube URL")
+
     video_response = youtube.videos().list(part='snippet', id=video_id).execute()
     video_data = video_response['items'][0]['snippet']
     return video_id, video_data['title'], video_data['channelTitle']
+
+def get_youtube_playlist_data(playlist_id: str, youtube) -> list:
+    video_details = []
+    next_page_token = None
+
+    while True:
+        playlist_response = youtube.playlistItems().list(
+            part='snippet',
+            maxResults=50,
+            playlistId=playlist_id,
+            pageToken=next_page_token
+        ).execute()
+
+        for item in playlist_response['items']:
+            video_id = item['snippet']['resourceId']['videoId']
+            title = item['snippet']['title']
+            uploader = item['snippet']['channelTitle']
+            video_details.append((video_id, title, uploader))
+
+        next_page_token = playlist_response.get('nextPageToken')
+        if not next_page_token:
+            break
+
+    return video_details
+
 
 def ensure_path_exists(file_path: str):
     directory = os.path.dirname(file_path)
@@ -109,7 +131,6 @@ def append_to_file(file_path: str, line: str) -> None:
         f.flush()
         os.fsync(f.fileno())
 
-# took a stab at jiggering this around so that --edit is a special case and we don't process the url instead
 def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Add URL to markdown files.")
     parser.add_argument("url", nargs='?', default=None, help="URL to be added.")
@@ -121,26 +142,20 @@ def parse_arguments() -> argparse.Namespace:
     args = parser.parse_args()
 
     if args.edit:
-        if args.url and "www.youtube.com" in args.url:
-            os.system(f"vim {YOUTUBE}")
-            sys.exit()
-        else:
-            os.system(f"vim {LINKS}")
-            sys.exit()
+        os.system(f"vim {UNIFIED}")
+        sys.exit()
 
     if args.url:
-        args.url = args.url.replace('&', '\&')
+        args.url = args.url.replace('&', '\\&')
 
     return args
 
 def url_exists_in_file(url: str, file_path: str) -> bool:
+    pattern = re.escape(url)
     with open(file_path, "r") as f:
         for line in f:
-            urls = re.findall(r'\[([^\]]+)\]', line)
-            for url_str in urls:
-                extracted_url = url_str.split(']')[0]
-                if url == extracted_url:
-                    return True
+            if re.search(pattern, line):
+                return True
     return False
 
 def get_channel_name(url: str) -> str:
@@ -155,60 +170,62 @@ def get_title_from_url(url: str) -> str:
     }
     try:
         response = requests.get(url, headers=headers)
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.content, 'html.parser')
-            title = soup.title.string.strip() if soup.title and soup.title.string else "No title found"
-            return title
-        else:
-            return f"Failed to fetch page content (status code: {response.status_code})"
+        response.raise_for_status()
+        soup = BeautifulSoup(response.content, 'html.parser')
+        title = soup.title.string.strip() if soup.title and soup.title.string else "No title found"
+        return title
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error fetching title: {e}")
+        return f"Error fetching title: {e}"
     except Exception as e:
-        return f"Error fetching title: {str(e)}"
+        logging.error(f"An unexpected error occurred: {e}")
+        return f"An unexpected error occurred: {e}"
 
 def process_url(url: str, force: bool) -> None:
+    logging.debug(f"Processing URL: {url}")
     if "youtube.com" in url:
-        channel_id = re.search(r"/(user|channel)/([\w-]+)", url)
-        if channel_id:
-            channel_id = channel_id.group(2)
-            channel_url = f"https://www.youtube.com/{channel_id}"
-            if url_exists_in_file(channel_url, YOUTUBE):
-                print(f"Error: Channel URL {channel_url} already recorded.")
-            else:
-                channel_name = get_channel_name(channel_url)
-                if channel_name:
-                    append_to_file(YOUTUBE, f"{date.today()}|[{channel_url}]|Youtube Creator {channel_name}\n")
-                    print(f"{date.today()}|[{channel_url}]|Youtube Creator {channel_name}")
-                else:
-                    print("Invalid YouTube Channel URL")
-        else:
-            video_id, title, uploader = get_youtube_data(url)
-            if video_id and title and uploader:
-                title = re.sub('[^0-9a-zA-Z]+', ' ', title)
-                title = " ".join(title.split())
+        try:
+            result = get_youtube_data(url)
+
+            if isinstance(result, list):  # Playlist
+                for video_id, title, uploader in result:
+                    title = re.sub('[^0-9a-zA-Z]+', ' ', title).strip()
+                    video_url = f"https://www.youtube.com/watch?v={video_id}"
+                    if not url_exists_in_file(video_url, UNIFIED):
+                        append_to_file(UNIFIED, f"{datetime.now().isoformat()}|[{video_url}]|({title})|{uploader}|YouTube\n")
+                        print(f"{datetime.now().isoformat()}|[{video_url}]|({title})|{uploader}|YouTube")
+                        logging.info(f"Added URL: {video_url}")
+            else:  # Single Video
+                video_id, title, uploader = result
+                title = re.sub('[^0-9a-zA-Z]+', ' ', title).strip()
                 video_url = f"https://www.youtube.com/watch?v={video_id}"
-                if url_exists_in_file(video_url, YOUTUBE):
-                    print(f"Error: Video URL {video_url} already recorded.")
-                else:
-                    append_to_file(YOUTUBE, f"{date.today()}|[{video_url}]|({title})|{uploader}\n")
-                    print(f"{date.today()}|[{video_url}]|({title})|{uploader}")
-            else:
-                print("Invalid YouTube URL")
+                if not url_exists_in_file(video_url, UNIFIED):
+                    append_to_file(UNIFIED, f"{datetime.now().isoformat()}|[{video_url}]|({title})|{uploader}|YouTube\n")
+                    print(f"{datetime.now().isoformat()}|[{video_url}]|({title})|{uploader}|YouTube")
+                    logging.info(f"Added URL: {video_url}")
+        except ValueError as e:
+            print(f"Error: {e}")
+            logging.error(f"Invalid YouTube URL: {e}")
     else:
         title = get_title_from_url(url)
         if title and not title.startswith("Error"):
-            if url_exists_in_file(url, LINKS):
-                print(f"Error: URL {url} already recorded.")
-            else:
-                append_to_file(LINKS, f"{date.today()}|[{url}]|({title})\n")
-                print(f"{date.today()}|[{url}]|({title})")
+            if not url_exists_in_file(url, UNIFIED):
+                append_to_file(UNIFIED, f"{datetime.now().isoformat()}|[{url}]|({title})|General|General\n")
+                print(f"{datetime.now().isoformat()}|[{url}]|({title})|General|General")
+                logging.info(f"Added URL: {url}")
         else:
             print("Invalid URL")
+            logging.error("Invalid URL")
+
 
 def main() -> None:
-    ensure_path_exists(YOUTUBE)
-    ensure_path_exists(LINKS)
+    ensure_path_exists(UNIFIED)
 
     try:
         args = parse_arguments()
+
+# commented used for debugging
+#        print(f"ARGS: {args.url}")
 
         if args.integrity:
             integrity_errors = check_integrity()
@@ -229,6 +246,7 @@ def main() -> None:
                     process_url(url, force)
                 except Exception as e:
                     print(f"An error occurred: {e}")
+                    logging.error(f"An error occurred: {e}")
     except KeyboardInterrupt:
         print("\nExiting...")
         sys.exit(0)

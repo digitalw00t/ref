@@ -5,3 +5,4 @@ venv/
 build/*
 dist/
 ref.spec
+r_and_d/*

@@ -39,9 +39,6 @@ YOUTUBE_API_SERVICE_NAME = 'youtube'
 YOUTUBE_API_VERSION = 'v3'
 
 # Set up logging
-#logging.basicConfig(filename='ref.log', level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(message)s')
-
-# Configure logging to print to console instead of logging to a file
 #logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(message)s')
 
 
@@ -189,7 +186,6 @@ def get_title_from_url(url: str) -> str:
 def process_url(url: str, force: bool) -> None:
     logging.debug(f"Processing URL: {url}")
     if "youtube.com" in url:
-        # Existing YouTube URL handling code
         try:
             result = get_youtube_data(url)
 
@@ -201,6 +197,9 @@ def process_url(url: str, force: bool) -> None:
                         append_to_file(UNIFIED, f"{datetime.now().isoformat()}|[{video_url}]|({title})|{uploader}|YouTube\n")
                         print(f"{datetime.now().isoformat()}|[{video_url}]|({title})|{uploader}|YouTube")
                         logging.info(f"Added URL: {video_url}")
+                    else:
+                        print(f"Error: URL {video_url} already recorded.")
+                        logging.warning(f"Duplicate URL: {video_url}")
             else:  # Single Video
                 video_id, title, uploader = result
                 title = re.sub('[^0-9a-zA-Z]+', ' ', title).strip()
@@ -209,6 +208,9 @@ def process_url(url: str, force: bool) -> None:
                     append_to_file(UNIFIED, f"{datetime.now().isoformat()}|[{video_url}]|({title})|{uploader}|YouTube\n")
                     print(f"{datetime.now().isoformat()}|[{video_url}]|({title})|{uploader}|YouTube")
                     logging.info(f"Added URL: {video_url}")
+                else:
+                    print(f"Error: URL {video_url} already recorded.")
+                    logging.warning(f"Duplicate URL: {video_url}")
         except ValueError as e:
             print(f"Error: {e}")
             logging.error(f"Invalid YouTube URL: {e}")
@@ -233,8 +235,6 @@ def process_url(url: str, force: bool) -> None:
             print("Invalid URL")
             logging.error(f"Invalid URL: {url} with title: {title}")
 
-
-
 def main() -> None:
     ensure_path_exists(UNIFIED)
 
@@ -249,8 +249,8 @@ def main() -> None:
             if integrity_errors:
                 print("Integrity check failed:")
                 for error in integrity_errors:
-                    file_name, line_number, line_contents = error
-                    print(f"{file_name} line {line_number}: {line_contents}")
+                    file_name, line_number, line_contents, expected_line = error
+                    print(f"{file_name} line {line_number}: {line_contents}\nExpected: {expected_line}")
             else:
                 print("Integrity check passed. Log files are formatted correctly.")
         elif args.url:
@@ -270,3 +270,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

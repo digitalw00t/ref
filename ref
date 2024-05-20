@@ -175,7 +175,7 @@ def append_to_file(file_path: str, line: str) -> None:
         f.flush()
         os.fsync(f.fileno())
 
-def search_entries(search_term: str, search_field: str, file_path: str) -> list:
+def search_entries(search_term: str, search_field: str, file_path: str) -> dict:
     """
     Searches for entries in a file based on a specified search term and field.
 
@@ -185,9 +185,9 @@ def search_entries(search_term: str, search_field: str, file_path: str) -> list:
         file_path (str): The path to the file where the search will be conducted.
 
     Returns:
-        list: A list of lines from the file that match the search criteria. Each line is stripped of leading and trailing whitespace.
+        dict: A dictionary where keys are lines from the file that match the search criteria and values are lists of hit types.
     """
-    results = []
+    results = {}
     search_term_lower = search_term.lower()  # Convert search term to lowercase for case-insensitive search
 
     with open(file_path, "r") as file:
@@ -197,17 +197,24 @@ def search_entries(search_term: str, search_field: str, file_path: str) -> list:
                 logging.warning(f"Line does not have the expected number of fields: {line.strip()}")
                 continue
 
+            hit_types = []
             # Perform case-insensitive search
             if search_field == "url" and search_term_lower in fields[1].lower():
-                results.append(line.strip())
+                hit_types.append("Url")
             elif search_field == "title" and search_term_lower in fields[2].lower():
-                results.append(line.strip())
+                hit_types.append("Title")
             elif search_field == "date" and search_term_lower in fields[0].lower():
-                results.append(line.strip())
+                hit_types.append("Date")
             elif search_field == "source" and search_term_lower in fields[4].lower():
-                results.append(line.strip())
+                hit_types.append("Source")
             elif search_field == "uploader" and search_term_lower in fields[3].lower():
-                results.append(line.strip())
+                hit_types.append("Uploader")
+
+            if hit_types:
+                if line not in results:
+                    results[line] = hit_types
+                else:
+                    results[line].extend(hit_types)
 
     return results
 
@@ -420,34 +427,54 @@ def main() -> None:
         elif args.search:
             search_term = args.search
             all_fields = ["url", "title", "date", "source", "uploader"]
+            results = {}
             for field in all_fields:
-                results = search_entries(search_term, field, UNIFIED)
-                for result in results:
-                    fields = result.split('|')
-                    search_result = f"{fields[0]}|[{fields[1]}]|({fields[2]})|{fields[3]}|{fields[4]}"
-                    hit_type = field.capitalize()
-                    print(search_result)
+                field_results = search_entries(search_term, field, UNIFIED)
+                for line, hit_types in field_results.items():
+                    if line not in results:
+                        results[line] = hit_types
+                    else:
+                        results[line].extend(hit_types)
+            for line, hit_types in results.items():
+                unique_hit_types = list(set(hit_types))
+                print(line.strip())
+                for hit_type in unique_hit_types:
                     print(f"-Hit Type: {hit_type}")
         elif args.search_url:
             results = search_entries(args.search_url, "url", UNIFIED)
-            for result in results:
-                print(result)
+            for line, hit_types in results.items():
+                unique_hit_types = list(set(hit_types))
+                print(line.strip())
+                for hit_type in unique_hit_types:
+                    print(f"-Hit Type: {hit_type}")
         elif args.search_title:
             results = search_entries(args.search_title, "title", UNIFIED)
-            for result in results:
-                print(result)
+            for line, hit_types in results.items():
+                unique_hit_types = list(set(hit_types))
+                print(line.strip())
+                for hit_type in unique_hit_types:
+                    print(f"-Hit Type: {hit_type}")
         elif args.search_date:
             results = search_entries(args.search_date, "date", UNIFIED)
-            for result in results:
-                print(result)
+            for line, hit_types in results.items():
+                unique_hit_types = list(set(hit_types))
+                print(line.strip())
+                for hit_type in unique_hit_types:
+                    print(f"-Hit Type: {hit_type}")
         elif args.search_source:
             results = search_entries(args.search_source, "source", UNIFIED)
-            for result in results:
-                print(result)
+            for line, hit_types in results.items():
+                unique_hit_types = list(set(hit_types))
+                print(line.strip())
+                for hit_type in unique_hit_types:
+                    print(f"-Hit Type: {hit_type}")
         elif args.search_uploader:
             results = search_entries(args.search_uploader, "uploader", UNIFIED)
-            for result in results:
-                print(result)
+            for line, hit_types in results.items():
+                unique_hit_types = list(set(hit_types))
+                print(line.strip())
+                for hit_type in unique_hit_types:
+                    print(f"-Hit Type: {hit_type}")
         elif args.url:
             process_url(args.url, args.force)
         else:

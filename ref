@@ -101,6 +101,7 @@ def get_youtube_data(url: str) -> tuple:
         else:
             raise ValueError("Invalid YouTube URL")
 
+    video_id = video_id[0]  # Extract video ID from the list
     video_response = youtube.videos().list(part='snippet', id=video_id).execute()
     video_data = video_response['items'][0]['snippet']
     return video_id, video_data['title'], video_data['channelTitle']
@@ -250,10 +251,11 @@ def url_exists_in_file(url: str, file_path: str) -> bool:
     Returns:
         bool: True if the URL exists in the file, False otherwise.
     """
-    pattern = re.escape(url)
     with open(file_path, "r") as f:
         for line in f:
-            if re.search(pattern, line):
+            # Extract the URL part from the line and compare exactly
+            match = re.search(r'\[([^\]]+)\]', line)
+            if match and match.group(1) == url:
                 return True
     return False
 
@@ -301,6 +303,8 @@ def process_url(url: str, force: bool) -> None:
         None
     """
     logging.debug(f"Processing URL: {url}")
+    current_time = datetime.now().strftime('%Y-%m-%dT%H:%M:%S')  # Format without milliseconds
+    
     if "youtube.com" in url:
         try:
             result = get_youtube_data(url)
@@ -308,15 +312,15 @@ def process_url(url: str, force: bool) -> None:
                 playlist_title, playlist_uploader, videos = result
                 playlist_url = url
                 if not url_exists_in_file(playlist_url, UNIFIED) or force:
-                    append_to_file(UNIFIED, f"{datetime.now().isoformat()}|[{playlist_url}]|({playlist_title})|{playlist_uploader}|YouTube\n")
-                    print(f"{datetime.now().isoformat()}|[{playlist_url}]|({playlist_title})|{playlist_uploader}|YouTube")
+                    append_to_file(UNIFIED, f"{current_time}|[{playlist_url}]|({playlist_title})|{playlist_uploader}|YouTube\n")
+                    print(f"{current_time}|[{playlist_url}]|({playlist_title})|{playlist_uploader}|YouTube")
                     logging.info(f"Added playlist URL: {playlist_url}")
                 for video_id, title, uploader in videos:
                     title = re.sub('[^0-9a-zA-Z]+', ' ', title).strip()
                     video_url = f"https://www.youtube.com/watch?v={video_id}"
                     if not url_exists_in_file(video_url, UNIFIED) or force:
-                        append_to_file(UNIFIED, f"{datetime.now().isoformat()}|[{video_url}]|({title})|{uploader}|YouTube\n")
-                        print(f"{datetime.now().isoformat()}|[{video_url}]|({title})|{uploader}|YouTube")
+                        append_to_file(UNIFIED, f"{current_time}|[{video_url}]|({title})|{uploader}|YouTube\n")
+                        print(f"{current_time}|[{video_url}]|({title})|{uploader}|YouTube")
                         logging.info(f"Added video URL: {video_url}")
                     else:
                         print(f"Error: URL {video_url} already recorded.")
@@ -326,8 +330,8 @@ def process_url(url: str, force: bool) -> None:
                 title = re.sub('[^0-9a-zA-Z]+', ' ', title).strip()
                 video_url = f"https://www.youtube.com/watch?v={video_id}"
                 if not url_exists_in_file(video_url, UNIFIED) or force:
-                    append_to_file(UNIFIED, f"{datetime.now().isoformat()}|[{video_url}]|({title})|{uploader}|YouTube\n")
-                    print(f"{datetime.now().isoformat()}|[{video_url}]|({title})|{uploader}|YouTube")
+                    append_to_file(UNIFIED, f"{current_time}|[{video_url}]|({title})|{uploader}|YouTube\n")
+                    print(f"{current_time}|[{video_url}]|({title})|{uploader}|YouTube")
                     logging.info(f"Added video URL: {video_url}")
                 else:
                     print(f"Error: URL {video_url} already recorded.")
@@ -355,8 +359,8 @@ def process_url(url: str, force: bool) -> None:
                 print(f"Error: URL {url} already recorded.")
                 logging.warning(f"Duplicate URL: {url}")
             else:
-                append_to_file(UNIFIED, f"{datetime.now().isoformat()}|[{url}]|({title})|General|General\n")
-                print(f"{datetime.now().isoformat()}|[{url}]|({title})|General|General")
+                append_to_file(UNIFIED, f"{current_time}|[{url}]|({title})|General|General\n")
+                print(f"{current_time}|[{url}]|({title})|General|General")
                 logging.info(f"Added URL: {url}")
         else:
             print("Invalid URL")

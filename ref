@@ -265,11 +265,17 @@ def get_title_from_url(url: str) -> str:
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36'
     }
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
         soup = BeautifulSoup(response.content, 'html.parser')
         title = soup.title.string.strip() if soup.title and soup.title.string else "No title found"
         return title
+    except requests.exceptions.Timeout:
+        logging.error(f"Timeout error fetching title: {url}")
+        return "Timeout error"
+    except requests.exceptions.TooManyRedirects:
+        logging.error(f"Too many redirects: {url}")
+        return "Too many redirects"
     except requests.exceptions.RequestException as e:
         logging.error(f"Error fetching title: {e}")
         return "Dead link"
@@ -280,11 +286,11 @@ def get_title_from_url(url: str) -> str:
 def process_url(url: str, force: bool) -> None:
     """
     Processes a given URL to extract and record relevant information.
-
+    
     Args:
         url (str): The URL to be processed.
         force (bool): A flag indicating whether to force the addition of the URL even if it already exists.
-
+    
     Returns:
         None
     """
@@ -329,6 +335,12 @@ def process_url(url: str, force: bool) -> None:
         if title == "Dead link":
             print(f"Error: The URL {url} is a dead link.")
             logging.error(f"Dead link detected: {url}")
+        elif title == "Timeout error":
+            print(f"Error: The request to {url} timed out.")
+            logging.error(f"Timeout error detected: {url}")
+        elif title == "Too many redirects":
+            print(f"Error: The URL {url} has too many redirects.")
+            logging.error(f"Too many redirects detected: {url}")
         elif title.startswith("Unexpected error"):
             print("Error: An unexpected error occurred.")
             logging.error(f"Unexpected error with URL: {url}")

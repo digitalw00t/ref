@@ -41,16 +41,17 @@ YOUTUBE_API_VERSION = 'v3'
 # Set up logging
 #logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(message)s')
 
+DEVELOPER_KEY = os.getenv('YOUTUBE_API_KEY')
+BASE = os.path.expanduser("~/")
+UNIFIED = os.path.join(BASE, "references", "references.md")
 
 def check_integrity():
     errors = []
-
     with open(UNIFIED, "r") as file:
         for line_number, line in enumerate(file, start=1):
             if not re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\|\[.*\]\(.*\)\|\(.*\)\|.*\|(YouTube|General)\n$', line):
                 expected_line = f'{datetime.now().isoformat()}|[URL]|(Title)|Source|(YouTube|General)'
                 errors.append((f"references.md", line_number, line.strip(), expected_line))
-
     return errors
 
 def set_developer_key():
@@ -59,36 +60,26 @@ def set_developer_key():
     set_key(env_path, 'YOUTUBE_API_KEY', key)
     print("YOUTUBE_API_KEY set successfully!")
 
-DEVELOPER_KEY = os.getenv('YOUTUBE_API_KEY')
-
 if DEVELOPER_KEY is None:
     print('Error: YOUTUBE_API_KEY is not set in .env file or shell environment.')
     choice = input('Would you like to set it now? (yes/no): ')
-
     if choice.lower() == 'yes':
         set_developer_key()
 else:
     if os.getenv('DEBUG') == 'True':
         print('YOUTUBE_API_KEY is set.')
 
-BASE = os.path.expanduser("~/")
-UNIFIED = os.path.join(BASE, "references", "references.md")
-
 def get_youtube_data(url: str) -> tuple:
     youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, developerKey=DEVELOPER_KEY)
     parsed_url = urlparse(url)
     query_params = parse_qs(parsed_url.query)
-
-    # Check if the URL is a playlist
     if 'list' in query_params:
         return get_youtube_playlist_data(query_params['list'][0], youtube)
-    
     video_id = query_params.get('v')
     if video_id:
         video_id = video_id[0]
     else:
         raise ValueError("Invalid YouTube URL")
-
     video_response = youtube.videos().list(part='snippet', id=video_id).execute()
     video_data = video_response['items'][0]['snippet']
     return video_id, video_data['title'], video_data['channelTitle']
@@ -96,7 +87,6 @@ def get_youtube_data(url: str) -> tuple:
 def get_youtube_playlist_data(playlist_id: str, youtube) -> list:
     video_details = []
     next_page_token = None
-
     while True:
         playlist_response = youtube.playlistItems().list(
             part='snippet',
@@ -104,19 +94,15 @@ def get_youtube_playlist_data(playlist_id: str, youtube) -> list:
             playlistId=playlist_id,
             pageToken=next_page_token
         ).execute()
-
         for item in playlist_response['items']:
             video_id = item['snippet']['resourceId']['videoId']
             title = item['snippet']['title']
             uploader = item['snippet']['channelTitle']
             video_details.append((video_id, title, uploader))
-
         next_page_token = playlist_response.get('nextPageToken')
         if not next_page_token:
             break
-
     return video_details
-
 
 def ensure_path_exists(file_path: str):
     directory = os.path.dirname(file_path)
@@ -139,16 +125,14 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("-e", "--edit", action="store_true", help="Open markdown file for editing.")
     parser.add_argument("-d", "--debug", action="store_true", help="Print debug information.")
     parser.add_argument("--integrity", action="store_true", help="Check the integrity of log files.")
+    parser.add_argument("-b", "--backup", action="store_true", help="Create a backup of the references.md file.")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__VERSION__}") 
     args = parser.parse_args()
-
     if args.edit:
         os.system(f"vim {UNIFIED}")
         sys.exit()
-
     if args.url:
         args.url = args.url.replace('&', '\\&')
-
     return args
 
 def url_exists_in_file(url: str, file_path: str) -> bool:
@@ -158,12 +142,6 @@ def url_exists_in_file(url: str, file_path: str) -> bool:
             if re.search(pattern, line):
                 return True
     return False
-
-def get_channel_name(url: str) -> str:
-    parsed_url = urlparse(url)
-    channel_path = parsed_url.path.rstrip('/')
-    channel_name = channel_path.split('/')[-1]
-    return channel_name
 
 def get_title_from_url(url: str) -> str:
     headers = {
@@ -182,13 +160,11 @@ def get_title_from_url(url: str) -> str:
         logging.error(f"An unexpected error occurred: {e}")
         return "Unexpected error"
 
-
 def process_url(url: str, force: bool) -> None:
     logging.debug(f"Processing URL: {url}")
     if "youtube.com" in url:
         try:
             result = get_youtube_data(url)
-
             if isinstance(result, list):  # Playlist
                 for video_id, title, uploader in result:
                     title = re.sub('[^0-9a-zA-Z]+', ' ', title).strip()
@@ -235,15 +211,23 @@ def process_url(url: str, force: bool) -> None:
             print("Invalid URL")
             logging.error(f"Invalid URL: {url} with title: {title}")
 
+def create_backup(file_path: str) -> None:
+    timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
+    backup_file_path = f"{os.path.dirname(file_path)}/{timestamp}_{os.path.basename(file_path)}"
+    try:
+        with open(file_path, 'r') as original_file:
+            with open(backup_file_path, 'w') as backup_file:
+                backup_file.write(original_file.read())
+        print(f"Backup created: {backup_file_path}")
+        logging.info(f"Backup created: {backup_file_path}")
+    except Exception as e:
+        print(f"Error creating backup: {e}")
+        logging.error(f"Error creating backup: {e}")
+
 def main() -> None:
     ensure_path_exists(UNIFIED)
-
     try:
         args = parse_arguments()
-
-# commented used for debugging
-#        print(f"ARGS: {args.url}")
-
         if args.integrity:
             integrity_errors = check_integrity()
             if integrity_errors:
@@ -253,6 +237,8 @@ def main() -> None:
                     print(f"{file_name} line {line_number}: {line_contents}\nExpected: {expected_line}")
             else:
                 print("Integrity check passed. Log files are formatted correctly.")
+        elif args.backup:
+            create_backup(UNIFIED)
         elif args.url:
             process_url(args.url, args.force)
         else:
@@ -270,4 +256,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

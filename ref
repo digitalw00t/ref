@@ -177,38 +177,43 @@ def append_to_file(file_path: str, line: str) -> None:
 def search_entries(search_term: str, search_field: str, file_path: str) -> list:
     """
     Searches for entries in a file based on a specified search term and field.
-    
+
     Args:
         search_term (str): The term to search for within the specified field.
         search_field (str): The field to search within. Valid options are "url", "title", "date", "source", and "uploader".
         file_path (str): The path to the file where the search will be conducted.
-    
+
     Returns:
         list: A list of lines from the file that match the search criteria. Each line is stripped of leading and trailing whitespace.
     """
     results = []
+    search_term_lower = search_term.lower()  # Convert search term to lowercase for case-insensitive search
+
     with open(file_path, "r") as file:
         for line in file:
             fields = line.split('|')
             if len(fields) < 5:
                 logging.warning(f"Line does not have the expected number of fields: {line.strip()}")
                 continue
-            if search_field == "url" and search_term in fields[1]:
+
+            # Perform case-insensitive search
+            if search_field == "url" and search_term_lower in fields[1].lower():
                 results.append(line.strip())
-            elif search_field == "title" and search_term in fields[2]:
+            elif search_field == "title" and search_term_lower in fields[2].lower():
                 results.append(line.strip())
-            elif search_field == "date" and search_term in fields[0]:
+            elif search_field == "date" and search_term_lower in fields[0].lower():
                 results.append(line.strip())
-            elif search_field == "source" and search_term in fields[4]:
+            elif search_field == "source" and search_term_lower in fields[4].lower():
                 results.append(line.strip())
-            elif search_field == "uploader" and search_term in fields[3]:
+            elif search_field == "uploader" and search_term_lower in fields[3].lower():
                 results.append(line.strip())
+
     return results
 
 def parse_arguments() -> argparse.Namespace:
     """
     Parses command-line arguments and returns the parsed arguments as a Namespace object.
-    
+
     Returns:
         argparse.Namespace: The parsed command-line arguments.
     """
@@ -216,7 +221,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("url", nargs='?', default=None, help="URL to be added.")
     parser.add_argument("-f", "--force", action="store_true", help="Force addition even if URL already exists.")
     parser.add_argument("-e", "--edit", action="store_true", help="Open markdown file for editing.")
-    parser.add_argument("-d", "--debug", action="store_true", help="Print debug information.")
+    parser.add_argument("-d", "--debug", type=int, choices=[1, 2, 3], help="Set the debug level: 1 for INFO, 2 for WARNING, 3 for DEBUG.")
     parser.add_argument("--integrity", action="store_true", help="Check the integrity of log files.")
     parser.add_argument("-b", "--backup", action="store_true", help="Create a backup of the references.md file.")
     parser.add_argument("--search-url", help="Search entries by URL.")
@@ -224,7 +229,8 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--search-date", help="Search entries by date.")
     parser.add_argument("--search-source", help="Search entries by source.")
     parser.add_argument("--search-uploader", help="Search entries by uploader.")
-    parser.add_argument("--version", action="version", version=f"%(prog)s {__VERSION__}") 
+    parser.add_argument("--search", help="Search entries across all fields (URL, title, date, source, uploader).")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__VERSION__}")
     args = parser.parse_args()
     if args.edit:
         os.system(f"vim {UNIFIED}")
@@ -407,6 +413,17 @@ def main() -> None:
                 print("Integrity check passed. Log files are formatted correctly.")
         elif args.backup:
             create_backup(UNIFIED)
+        elif args.search:
+            search_term = args.search
+            all_fields = ["url", "title", "date", "source", "uploader"]
+            for field in all_fields:
+                results = search_entries(search_term, field, UNIFIED)
+                for result in results:
+                    fields = result.split('|')
+                    search_result = f"{fields[0]}|[{fields[1]}]|({fields[2]})|{fields[3]}|{fields[4]}"
+                    hit_type = field.capitalize()
+                    print(search_result)
+                    print(f"-Hit Type: {hit_type}")
         elif args.search_url:
             results = search_entries(args.search_url, "url", UNIFIED)
             for result in results:

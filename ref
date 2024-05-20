@@ -74,24 +74,24 @@ def set_developer_key():
 def get_youtube_data(url: str) -> tuple:
     """
     Fetches YouTube video or playlist data using the YouTube Data API.
-    
+
     Args:
         url (str): The YouTube URL to fetch data for.
-    
+
     Returns:
         tuple: Video ID, title, and channel title for a single video.
-        list: List of tuples containing video ID, title, and channel title for a playlist.
-    
+        tuple: Playlist title, uploader, and list of video details for a playlist.
+
     Raises:
         ValueError: If the YouTube URL is invalid.
     """
     youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, developerKey=DEVELOPER_KEY)
     parsed_url = urlparse(url)
     query_params = parse_qs(parsed_url.query)
-    
+
     if 'list' in query_params:
         return get_youtube_playlist_data(query_params['list'][0], youtube)
-    
+
     video_id = query_params.get('v')
     if not video_id:
         # Check if it's a Shorts URL
@@ -100,40 +100,52 @@ def get_youtube_data(url: str) -> tuple:
             video_id = shorts_match.group(1)
         else:
             raise ValueError("Invalid YouTube URL")
-    
+
     video_response = youtube.videos().list(part='snippet', id=video_id).execute()
     video_data = video_response['items'][0]['snippet']
     return video_id, video_data['title'], video_data['channelTitle']
 
-def get_youtube_playlist_data(playlist_id: str, youtube) -> list:
+def get_youtube_playlist_data(playlist_id: str, youtube) -> tuple:
     """
     Fetches YouTube playlist data using the YouTube Data API.
-    
+
     Args:
         playlist_id (str): The YouTube playlist ID.
         youtube: The YouTube API client.
-    
+
     Returns:
-        list: A list of tuples containing video ID, title, and channel title for each video in the playlist.
+        tuple: A tuple containing the playlist title, uploader, and a list of tuples for each video in the playlist.
+               Each video tuple contains video ID, title, and uploader.
     """
+    # Get playlist metadata
+    playlist_response = youtube.playlists().list(part='snippet', id=playlist_id).execute()
+    if not playlist_response['items']:
+        raise ValueError("Invalid YouTube Playlist ID")
+
+    playlist_snippet = playlist_response['items'][0]['snippet']
+    playlist_title = playlist_snippet['title']
+    playlist_uploader = playlist_snippet['channelTitle']
+
+    # Get videos in the playlist
     video_details = []
     next_page_token = None
     while True:
-        playlist_response = youtube.playlistItems().list(
+        playlist_items_response = youtube.playlistItems().list(
             part='snippet',
             maxResults=50,
             playlistId=playlist_id,
             pageToken=next_page_token
         ).execute()
-        for item in playlist_response['items']:
+        for item in playlist_items_response['items']:
             video_id = item['snippet']['resourceId']['videoId']
             title = item['snippet']['title']
             uploader = item['snippet']['channelTitle']
             video_details.append((video_id, title, uploader))
-        next_page_token = playlist_response.get('nextPageToken')
+        next_page_token = playlist_items_response.get('nextPageToken')
         if not next_page_token:
             break
-    return video_details
+
+    return playlist_title, playlist_uploader, video_details
 
 def ensure_path_exists(file_path: str):
     """
@@ -268,11 +280,11 @@ def get_title_from_url(url: str) -> str:
 def process_url(url: str, force: bool) -> None:
     """
     Processes a given URL to extract and record relevant information.
-    
+
     Args:
         url (str): The URL to be processed.
         force (bool): A flag indicating whether to force the addition of the URL even if it already exists.
-    
+
     Returns:
         None
     """
@@ -280,14 +292,20 @@ def process_url(url: str, force: bool) -> None:
     if "youtube.com" in url:
         try:
             result = get_youtube_data(url)
-            if isinstance(result, list):  # Playlist
-                for video_id, title, uploader in result:
+            if isinstance(result, tuple) and isinstance(result[2], list):  # Playlist
+                playlist_title, playlist_uploader, videos = result
+                playlist_url = url
+                if not url_exists_in_file(playlist_url, UNIFIED) or force:
+                    append_to_file(UNIFIED, f"{datetime.now().isoformat()}|[{playlist_url}]|({playlist_title})|{playlist_uploader}|YouTube\n")
+                    print(f"{datetime.now().isoformat()}|[{playlist_url}]|({playlist_title})|{playlist_uploader}|YouTube")
+                    logging.info(f"Added playlist URL: {playlist_url}")
+                for video_id, title, uploader in videos:
                     title = re.sub('[^0-9a-zA-Z]+', ' ', title).strip()
                     video_url = f"https://www.youtube.com/watch?v={video_id}"
                     if not url_exists_in_file(video_url, UNIFIED) or force:
                         append_to_file(UNIFIED, f"{datetime.now().isoformat()}|[{video_url}]|({title})|{uploader}|YouTube\n")
                         print(f"{datetime.now().isoformat()}|[{video_url}]|({title})|{uploader}|YouTube")
-                        logging.info(f"Added URL: {video_url}")
+                        logging.info(f"Added video URL: {video_url}")
                     else:
                         print(f"Error: URL {video_url} already recorded.")
                         logging.warning(f"Duplicate URL: {video_url}")
@@ -298,7 +316,7 @@ def process_url(url: str, force: bool) -> None:
                 if not url_exists_in_file(video_url, UNIFIED) or force:
                     append_to_file(UNIFIED, f"{datetime.now().isoformat()}|[{video_url}]|({title})|{uploader}|YouTube\n")
                     print(f"{datetime.now().isoformat()}|[{video_url}]|({title})|{uploader}|YouTube")
-                    logging.info(f"Added URL: {video_url}")
+                    logging.info(f"Added video URL: {video_url}")
                 else:
                     print(f"Error: URL {video_url} already recorded.")
                     logging.warning(f"Duplicate URL: {video_url}")

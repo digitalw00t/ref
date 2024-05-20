@@ -1,26 +1,26 @@
 #!/usr/bin/env python3
-# filename : ref
-# author : draeician (July 22, 2023)
-# purpose : to allow for fast cli recording from the command line for later reference
+# filename: ref
+# author: draeician (July 22, 2023)
+# purpose: to allow for fast CLI recording from the command line for later reference
 
-import readline
 import os
 import re
 import sys
 import requests
 import argparse
 import warnings
+import logging
 from datetime import datetime
 from urllib.parse import urlparse, parse_qs
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-import logging
+from bs4 import BeautifulSoup
+from dotenv import load_dotenv, set_key
 
+# Library versions
 import urllib3
 import chardet
 import charset_normalizer
-from bs4 import BeautifulSoup
-from dotenv import load_dotenv, set_key
 
 urllib3.__version__ = '2.0.4'
 chardet.__version__ = '5.2.0'
@@ -31,21 +31,29 @@ __VERSION__ = "v1.4.1"
 # Filter out the RequestsDependencyWarning
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="urllib3")
 
-# Adjust the following line to point to the actual location of your .env file
+# Set environment path
 env_path = os.path.join(os.path.expanduser("~"), '.env')
 load_dotenv(dotenv_path=env_path)
 
+# YouTube API details
 YOUTUBE_API_SERVICE_NAME = 'youtube'
 YOUTUBE_API_VERSION = 'v3'
-
-# Set up logging
-#logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(message)s')
-
 DEVELOPER_KEY = os.getenv('YOUTUBE_API_KEY')
+
+# Base path for references
 BASE = os.path.expanduser("~/")
 UNIFIED = os.path.join(BASE, "references", "references.md")
 
+# Logging configuration
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(message)s')
+
 def check_integrity():
+    """
+    Checks the integrity of the 'references.md' file to ensure that each line follows the expected format.
+    
+    Returns:
+        list: A list of tuples containing details of lines that do not match the expected format.
+    """
     errors = []
     with open(UNIFIED, "r") as file:
         for line_number, line in enumerate(file, start=1):
@@ -55,36 +63,59 @@ def check_integrity():
     return errors
 
 def set_developer_key():
+    """
+    Prompts the user to enter their YouTube API key and sets it in the environment variables.
+    """
     key = input("Please enter your YOUTUBE_API_KEY: ")
     os.environ['YOUTUBE_API_KEY'] = key
     set_key(env_path, 'YOUTUBE_API_KEY', key)
     print("YOUTUBE_API_KEY set successfully!")
 
-if DEVELOPER_KEY is None:
-    print('Error: YOUTUBE_API_KEY is not set in .env file or shell environment.')
-    choice = input('Would you like to set it now? (yes/no): ')
-    if choice.lower() == 'yes':
-        set_developer_key()
-else:
-    if os.getenv('DEBUG') == 'True':
-        print('YOUTUBE_API_KEY is set.')
-
 def get_youtube_data(url: str) -> tuple:
+    """
+    Fetches YouTube video or playlist data using the YouTube Data API.
+    
+    Args:
+        url (str): The YouTube URL to fetch data for.
+    
+    Returns:
+        tuple: Video ID, title, and channel title for a single video.
+        list: List of tuples containing video ID, title, and channel title for a playlist.
+    
+    Raises:
+        ValueError: If the YouTube URL is invalid.
+    """
     youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, developerKey=DEVELOPER_KEY)
     parsed_url = urlparse(url)
     query_params = parse_qs(parsed_url.query)
+    
     if 'list' in query_params:
         return get_youtube_playlist_data(query_params['list'][0], youtube)
+    
     video_id = query_params.get('v')
-    if video_id:
-        video_id = video_id[0]
-    else:
-        raise ValueError("Invalid YouTube URL")
+    if not video_id:
+        # Check if it's a Shorts URL
+        shorts_match = re.match(r'/shorts/([^/?]+)', parsed_url.path)
+        if shorts_match:
+            video_id = shorts_match.group(1)
+        else:
+            raise ValueError("Invalid YouTube URL")
+    
     video_response = youtube.videos().list(part='snippet', id=video_id).execute()
     video_data = video_response['items'][0]['snippet']
     return video_id, video_data['title'], video_data['channelTitle']
 
 def get_youtube_playlist_data(playlist_id: str, youtube) -> list:
+    """
+    Fetches YouTube playlist data using the YouTube Data API.
+    
+    Args:
+        playlist_id (str): The YouTube playlist ID.
+        youtube: The YouTube API client.
+    
+    Returns:
+        list: A list of tuples containing video ID, title, and channel title for each video in the playlist.
+    """
     video_details = []
     next_page_token = None
     while True:
@@ -105,6 +136,12 @@ def get_youtube_playlist_data(playlist_id: str, youtube) -> list:
     return video_details
 
 def ensure_path_exists(file_path: str):
+    """
+    Ensures that the directory and file specified by `file_path` exist. Creates them if they do not exist.
+    
+    Args:
+        file_path (str): The path to the file to ensure existence.
+    """
     directory = os.path.dirname(file_path)
     if not os.path.exists(directory):
         os.makedirs(directory)
@@ -112,20 +149,69 @@ def ensure_path_exists(file_path: str):
         open(file_path, 'w').close()
 
 def append_to_file(file_path: str, line: str) -> None:
+    """
+    Appends a line to the specified file, ensuring the path exists.
+    
+    Args:
+        file_path (str): The path to the file.
+        line (str): The line to append to the file.
+    """
     ensure_path_exists(file_path)
     with open(file_path, "a") as f:
         f.write(line)
         f.flush()
         os.fsync(f.fileno())
 
+def search_entries(search_term: str, search_field: str, file_path: str) -> list:
+    """
+    Searches for entries in a file based on a specified search term and field.
+    
+    Args:
+        search_term (str): The term to search for within the specified field.
+        search_field (str): The field to search within. Valid options are "url", "title", "date", "source", and "uploader".
+        file_path (str): The path to the file where the search will be conducted.
+    
+    Returns:
+        list: A list of lines from the file that match the search criteria. Each line is stripped of leading and trailing whitespace.
+    """
+    results = []
+    with open(file_path, "r") as file:
+        for line in file:
+            fields = line.split('|')
+            if len(fields) < 5:
+                logging.warning(f"Line does not have the expected number of fields: {line.strip()}")
+                continue
+            if search_field == "url" and search_term in fields[1]:
+                results.append(line.strip())
+            elif search_field == "title" and search_term in fields[2]:
+                results.append(line.strip())
+            elif search_field == "date" and search_term in fields[0]:
+                results.append(line.strip())
+            elif search_field == "source" and search_term in fields[4]:
+                results.append(line.strip())
+            elif search_field == "uploader" and search_term in fields[3]:
+                results.append(line.strip())
+    return results
+
 def parse_arguments() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Add URL to markdown files.")
+    """
+    Parses command-line arguments and returns the parsed arguments as a Namespace object.
+    
+    Returns:
+        argparse.Namespace: The parsed command-line arguments.
+    """
+    parser = argparse.ArgumentParser(description="Add or search URL entries in markdown files.")
     parser.add_argument("url", nargs='?', default=None, help="URL to be added.")
     parser.add_argument("-f", "--force", action="store_true", help="Force addition even if URL already exists.")
     parser.add_argument("-e", "--edit", action="store_true", help="Open markdown file for editing.")
     parser.add_argument("-d", "--debug", action="store_true", help="Print debug information.")
     parser.add_argument("--integrity", action="store_true", help="Check the integrity of log files.")
     parser.add_argument("-b", "--backup", action="store_true", help="Create a backup of the references.md file.")
+    parser.add_argument("--search-url", help="Search entries by URL.")
+    parser.add_argument("--search-title", help="Search entries by title.")
+    parser.add_argument("--search-date", help="Search entries by date.")
+    parser.add_argument("--search-source", help="Search entries by source.")
+    parser.add_argument("--search-uploader", help="Search entries by uploader.")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__VERSION__}") 
     args = parser.parse_args()
     if args.edit:
@@ -136,6 +222,16 @@ def parse_arguments() -> argparse.Namespace:
     return args
 
 def url_exists_in_file(url: str, file_path: str) -> bool:
+    """
+    Checks if a URL already exists in the specified file.
+    
+    Args:
+        url (str): The URL to check.
+        file_path (str): The path to the file.
+    
+    Returns:
+        bool: True if the URL exists in the file, False otherwise.
+    """
     pattern = re.escape(url)
     with open(file_path, "r") as f:
         for line in f:
@@ -144,6 +240,15 @@ def url_exists_in_file(url: str, file_path: str) -> bool:
     return False
 
 def get_title_from_url(url: str) -> str:
+    """
+    Fetches the title of a webpage given its URL.
+    
+    Args:
+        url (str): The URL of the webpage.
+    
+    Returns:
+        str: The title of the webpage, or an error message if the title cannot be fetched.
+    """
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36'
     }
@@ -161,6 +266,16 @@ def get_title_from_url(url: str) -> str:
         return "Unexpected error"
 
 def process_url(url: str, force: bool) -> None:
+    """
+    Processes a given URL to extract and record relevant information.
+    
+    Args:
+        url (str): The URL to be processed.
+        force (bool): A flag indicating whether to force the addition of the URL even if it already exists.
+    
+    Returns:
+        None
+    """
     logging.debug(f"Processing URL: {url}")
     if "youtube.com" in url:
         try:
@@ -169,7 +284,7 @@ def process_url(url: str, force: bool) -> None:
                 for video_id, title, uploader in result:
                     title = re.sub('[^0-9a-zA-Z]+', ' ', title).strip()
                     video_url = f"https://www.youtube.com/watch?v={video_id}"
-                    if not url_exists_in_file(video_url, UNIFIED):
+                    if not url_exists_in_file(video_url, UNIFIED) or force:
                         append_to_file(UNIFIED, f"{datetime.now().isoformat()}|[{video_url}]|({title})|{uploader}|YouTube\n")
                         print(f"{datetime.now().isoformat()}|[{video_url}]|({title})|{uploader}|YouTube")
                         logging.info(f"Added URL: {video_url}")
@@ -180,7 +295,7 @@ def process_url(url: str, force: bool) -> None:
                 video_id, title, uploader = result
                 title = re.sub('[^0-9a-zA-Z]+', ' ', title).strip()
                 video_url = f"https://www.youtube.com/watch?v={video_id}"
-                if not url_exists_in_file(video_url, UNIFIED):
+                if not url_exists_in_file(video_url, UNIFIED) or force:
                     append_to_file(UNIFIED, f"{datetime.now().isoformat()}|[{video_url}]|({title})|{uploader}|YouTube\n")
                     print(f"{datetime.now().isoformat()}|[{video_url}]|({title})|{uploader}|YouTube")
                     logging.info(f"Added URL: {video_url}")
@@ -200,7 +315,7 @@ def process_url(url: str, force: bool) -> None:
             print("Error: An unexpected error occurred.")
             logging.error(f"Unexpected error with URL: {url}")
         elif title and not title.startswith("Error"):
-            if url_exists_in_file(url, UNIFIED):
+            if url_exists_in_file(url, UNIFIED) and not force:
                 print(f"Error: URL {url} already recorded.")
                 logging.warning(f"Duplicate URL: {url}")
             else:
@@ -212,6 +327,15 @@ def process_url(url: str, force: bool) -> None:
             logging.error(f"Invalid URL: {url} with title: {title}")
 
 def create_backup(file_path: str) -> None:
+    """
+    Creates a backup of the specified file.
+    
+    Args:
+        file_path (str): The path to the file that needs to be backed up.
+    
+    Returns:
+        None
+    """
     timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
     backup_file_path = f"{os.path.dirname(file_path)}/{timestamp}_{os.path.basename(file_path)}"
     try:
@@ -225,6 +349,9 @@ def create_backup(file_path: str) -> None:
         logging.error(f"Error creating backup: {e}")
 
 def main() -> None:
+    """
+    Main function to handle the command-line interface for recording URLs.
+    """
     ensure_path_exists(UNIFIED)
     try:
         args = parse_arguments()
@@ -239,6 +366,26 @@ def main() -> None:
                 print("Integrity check passed. Log files are formatted correctly.")
         elif args.backup:
             create_backup(UNIFIED)
+        elif args.search_url:
+            results = search_entries(args.search_url, "url", UNIFIED)
+            for result in results:
+                print(result)
+        elif args.search_title:
+            results = search_entries(args.search_title, "title", UNIFIED)
+            for result in results:
+                print(result)
+        elif args.search_date:
+            results = search_entries(args.search_date, "date", UNIFIED)
+            for result in results:
+                print(result)
+        elif args.search_source:
+            results = search_entries(args.search_source, "source", UNIFIED)
+            for result in results:
+                print(result)
+        elif args.search_uploader:
+            results = search_entries(args.search_uploader, "uploader", UNIFIED)
+            for result in results:
+                print(result)
         elif args.url:
             process_url(args.url, args.force)
         else:
@@ -255,4 +402,13 @@ def main() -> None:
         sys.exit(0)
 
 if __name__ == "__main__":
+    if DEVELOPER_KEY is None:
+        print('Error: YOUTUBE_API_KEY is not set in .env file or shell environment.')
+        choice = input('Would you like to set it now? (yes/no): ')
+        if choice.lower() == 'yes':
+            set_developer_key()
+    else:
+        if os.getenv('DEBUG') == 'True':
+            print('YOUTUBE_API_KEY is set.')
     main()
+

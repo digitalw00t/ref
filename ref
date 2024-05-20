@@ -385,6 +385,17 @@ def main() -> None:
     ensure_path_exists(UNIFIED)
     try:
         args = parse_arguments()
+
+        # Set logging level based on the debug argument
+        if args.debug == 1:
+            logging.getLogger().setLevel(logging.INFO)
+        elif args.debug == 2:
+            logging.getLogger().setLevel(logging.WARNING)
+        elif args.debug == 3:
+            logging.getLogger().setLevel(logging.DEBUG)
+        else:
+            logging.getLogger().setLevel(logging.ERROR)
+
         if args.integrity:
             integrity_errors = check_integrity()
             if integrity_errors:

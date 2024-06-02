@@ -418,7 +418,6 @@ def process_url(url: str, force: bool) -> None:
             print("Invalid URL")
             logging.error(f"Invalid URL: {resolved_url} with title: {title}")
 
-
 def create_backup(file_path: str) -> None:
     """
     Creates a backup of the specified file.

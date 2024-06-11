@@ -10,6 +10,7 @@ import requests
 import argparse
 import warnings
 import logging
+import yaml
 from datetime import datetime
 from urllib.parse import urlparse, parse_qs
 from googleapiclient.discovery import build
@@ -46,9 +47,45 @@ DEVELOPER_KEY = os.getenv('YOUTUBE_API_KEY')
 BASE = os.path.expanduser("~/")
 UNIFIED = os.path.join(BASE, "references", "references.md")
 
+# Configuration file path
+CONFIG_DIR = os.path.join(os.path.expanduser("~"), '.config', 'ref')
+CONFIG_FILE = os.path.join(CONFIG_DIR, 'config.yaml')
+
 # Logging configuration
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(message)s')
 
+# Default configuration
+default_config = {
+    'removable_keys': [
+        'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
+        'rdt_cid', 'linkCode', 'tag', 'topicId', 'ref_', 'ascsubtag',
+        'share_id', 'fbclid', 'gclid', 'igshid', 'rdt', 'utm_name'
+    ]
+}
+
+def ensure_config_exists():
+    """
+    Ensures that the configuration directory and file exist. Creates them if they do not exist.
+    """
+    if not os.path.exists(CONFIG_DIR):
+        os.makedirs(CONFIG_DIR)
+    if not os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, 'w') as file:
+            yaml.dump(default_config, file)
+
+def load_config() -> dict:
+    """
+    Loads the configuration from the YAML file.
+
+    Returns:
+        dict: The configuration dictionary.
+    """
+    ensure_config_exists()
+    with open(CONFIG_FILE, 'r') as file:
+        config = yaml.safe_load(file)
+    return config
+
+config = load_config()
 
 def simplify_url(url: str) -> str:
     """
@@ -60,16 +97,7 @@ def simplify_url(url: str) -> str:
     Returns:
         str: The simplified URL.
     """
-    removable_keys = {
-        'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
-	'rdt_cid',
-	'linkCode',
-	'tag',
-	'topicId',
-	'ref_',
-	'ascsubtag',
-        'share_id', 'fbclid', 'gclid', 'igshid', 'rdt', 'utm_name'
-    }
+    removable_keys = set(config['removable_keys'])
     parsed_url = urlparse(url)
     query_params = parse_qs(parsed_url.query)
     filtered_query_params = {k: v for k, v in query_params.items() if k not in removable_keys}
@@ -82,7 +110,6 @@ def simplify_url(url: str) -> str:
     
     logging.debug(f"Simplified URL: {simplified_url}")
     return simplified_url
-
 
 
 def resolve_redirect(url: str) -> str:

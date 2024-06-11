@@ -62,6 +62,12 @@ def simplify_url(url: str) -> str:
     """
     removable_keys = {
         'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
+	'rdt_cid',
+	'linkCode',
+	'tag',
+	'topicId',
+	'ref_',
+	'ascsubtag',
         'share_id', 'fbclid', 'gclid', 'igshid', 'rdt', 'utm_name'
     }
     parsed_url = urlparse(url)

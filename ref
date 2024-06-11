@@ -49,6 +49,36 @@ UNIFIED = os.path.join(BASE, "references", "references.md")
 # Logging configuration
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(message)s')
 
+
+def simplify_url(url: str) -> str:
+    """
+    Simplifies the URL by removing advertising campaign information.
+
+    Args:
+        url (str): The original URL to simplify.
+
+    Returns:
+        str: The simplified URL.
+    """
+    removable_keys = {
+        'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
+        'share_id', 'fbclid', 'gclid', 'igshid', 'rdt', 'utm_name'
+    }
+    parsed_url = urlparse(url)
+    query_params = parse_qs(parsed_url.query)
+    filtered_query_params = {k: v for k, v in query_params.items() if k not in removable_keys}
+    simplified_query = '&'.join([f"{k}={v[0]}" for k, v in filtered_query_params.items()])
+    
+    if simplified_query:
+        simplified_url = parsed_url._replace(query=simplified_query).geturl()
+    else:
+        simplified_url = parsed_url._replace(query=None).geturl()
+    
+    logging.debug(f"Simplified URL: {simplified_url}")
+    return simplified_url
+
+
+
 def resolve_redirect(url: str) -> str:
     """
     Resolves the final URL after following any redirects. Specifically handles YouTube redirect URLs.
@@ -340,6 +370,7 @@ def get_title_from_url(url: str) -> str:
         logging.error(f"An unexpected error occurred: {e}")
         return "Unexpected error"
 
+
 def process_url(url: str, force: bool) -> None:
     """
     Processes a given URL to extract and record relevant information.
@@ -351,18 +382,20 @@ def process_url(url: str, force: bool) -> None:
     Returns:
         None
     """
-    logging.debug(f"Processing URL: {url}")
-    resolved_url = resolve_redirect(url)  # Resolve the redirect
+    logging.debug(f"Original URL: {url}")
+    resolved_url = resolve_redirect(url)  # Resolve the redirect first
     logging.debug(f"Resolved URL: {resolved_url}")
+    simplified_url = simplify_url(resolved_url)  # Then simplify the resolved URL
+    logging.debug(f"Simplified URL after resolving redirects: {simplified_url}")
     
     current_time = datetime.now().strftime('%Y-%m-%dT%H:%M:%S')  # Format without milliseconds
     
-    if "youtube.com" in resolved_url and not resolved_url.startswith('https://www.youtube.com/redirect'):
+    if "youtube.com" in simplified_url and not simplified_url.startswith('https://www.youtube.com/redirect'):
         try:
-            result = get_youtube_data(resolved_url)
+            result = get_youtube_data(simplified_url)
             if isinstance(result, tuple) and isinstance(result[2], list):  # Playlist
                 playlist_title, playlist_uploader, videos = result
-                playlist_url = resolved_url
+                playlist_url = simplified_url
                 if not url_exists_in_file(playlist_url, UNIFIED) or force:
                     append_to_file(UNIFIED, f"{current_time}|[{playlist_url}]|({playlist_title})|{playlist_uploader}|YouTube\n")
                     print(f"{current_time}|[{playlist_url}]|({playlist_title})|{playlist_uploader}|YouTube")
@@ -392,31 +425,33 @@ def process_url(url: str, force: bool) -> None:
             print(f"Error: {e}")
             logging.error(f"Invalid YouTube URL: {e}")
     else:
-        title = get_title_from_url(resolved_url)
+        title = get_title_from_url(simplified_url)
         logging.debug(f"Fetched title: {title}")
         if title == "Dead link":
-            print(f"Error: The URL {resolved_url} is a dead link.")
-            logging.error(f"Dead link detected: {resolved_url}")
+            print(f"Error: The URL {simplified_url} is a dead link.")
+            logging.error(f"Dead link detected: {simplified_url}")
         elif title == "Timeout error":
-            print(f"Error: The request to {resolved_url} timed out.")
-            logging.error(f"Timeout error detected: {resolved_url}")
+            print(f"Error: The request to {simplified_url} timed out.")
+            logging.error(f"Timeout error detected: {simplified_url}")
         elif title == "Too many redirects":
-            print(f"Error: The URL {resolved_url} has too many redirects.")
-            logging.error(f"Too many redirects detected: {resolved_url}")
+            print(f"Error: The URL {simplified_url} has too many redirects.")
+            logging.error(f"Too many redirects detected: {simplified_url}")
         elif title.startswith("Unexpected error"):
             print("Error: An unexpected error occurred.")
-            logging.error(f"Unexpected error with URL: {resolved_url}")
+            logging.error(f"Unexpected error with URL: {simplified_url}")
         elif title and not title.startswith("Error"):
-            if url_exists_in_file(resolved_url, UNIFIED) and not force:
-                print(f"Error: URL {resolved_url} already recorded.")
-                logging.warning(f"Duplicate URL: {resolved_url}")
+            if url_exists_in_file(simplified_url, UNIFIED) and not force:
+                print(f"Error: URL {simplified_url} already recorded.")
+                logging.warning(f"Duplicate URL: {simplified_url}")
             else:
-                append_to_file(UNIFIED, f"{current_time}|[{resolved_url}]|({title})|General|General\n")
-                print(f"{current_time}|[{resolved_url}]|({title})|General|General")
-                logging.info(f"Added URL: {resolved_url}")
+                append_to_file(UNIFIED, f"{current_time}|[{simplified_url}]|({title})|General|General\n")
+                print(f"{current_time}|[{simplified_url}]|({title})|General|General")
+                logging.info(f"Added URL: {simplified_url}")
         else:
             print("Invalid URL")
-            logging.error(f"Invalid URL: {resolved_url} with title: {title}")
+            logging.error(f"Invalid URL: {simplified_url} with title: {title}")
+
+
 
 def create_backup(file_path: str) -> None:
     """

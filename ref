@@ -19,6 +19,7 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv, set_key
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+import subprocess
 
 # Library versions
 import urllib3
@@ -43,26 +44,7 @@ YOUTUBE_API_SERVICE_NAME = 'youtube'
 YOUTUBE_API_VERSION = 'v3'
 DEVELOPER_KEY = os.getenv('YOUTUBE_API_KEY')
 
-# Base path for references
-BASE = os.path.expanduser("~/")
-UNIFIED = os.path.join(BASE, "references", "references.md")
-
-# Configuration file path
-CONFIG_DIR = os.path.join(os.path.expanduser("~"), '.config', 'ref')
-CONFIG_FILE = os.path.join(CONFIG_DIR, 'config.yaml')
-
-# Logging configuration
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(message)s')
-
-# Default configuration
-default_config = {
-    'removable_keys': [
-        'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
-        'rdt_cid', 'linkCode', 'tag', 'topicId', 'ref_', 'ascsubtag',
-        'share_id', 'fbclid', 'gclid', 'igshid', 'rdt', 'utm_name'
-    ]
-}
-
+# Load configuration
 def ensure_config_exists():
     """
     Ensures that the configuration directory and file exist. Creates them if they do not exist.
@@ -85,7 +67,16 @@ def load_config() -> dict:
         config = yaml.safe_load(file)
     return config
 
+CONFIG_DIR = os.path.join(os.path.expanduser("~"), '.config', 'ref')
+CONFIG_FILE = os.path.join(CONFIG_DIR, 'config.yaml')
+
 config = load_config()
+BASE = os.path.expanduser(config['paths']['references'])
+UNIFIED = os.path.join(BASE, "references.md")
+TRANSCRIPTS_DIR = os.path.expanduser(config['paths']['transcripts'])
+
+# Logging configuration
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s:%(message)s')
 
 def simplify_url(url: str) -> str:
     """
@@ -110,7 +101,6 @@ def simplify_url(url: str) -> str:
     
     logging.debug(f"Simplified URL: {simplified_url}")
     return simplified_url
-
 
 def resolve_redirect(url: str) -> str:
     """
@@ -161,7 +151,6 @@ def set_developer_key():
     set_key(env_path, 'YOUTUBE_API_KEY', key)
     print("YOUTUBE_API_KEY set successfully!")
 
-
 def get_youtube_data(url: str) -> tuple:
     """
     Fetches YouTube video or playlist data using the YouTube Data API.
@@ -197,7 +186,6 @@ def get_youtube_data(url: str) -> tuple:
     video_response = youtube.videos().list(part='snippet', id=video_id).execute()
     video_data = video_response['items'][0]['snippet']
     return video_id, video_data['title'], video_data['channelTitle']
-
 
 def get_youtube_playlist_data(playlist_id: str, youtube) -> tuple:
     """
@@ -406,6 +394,25 @@ def get_title_from_url(url: str) -> str:
         logging.error(f"An unexpected error occurred: {e}")
         return "Unexpected error"
 
+def fetch_youtube_transcript(video_id: str) -> str:
+    """
+    Fetches the transcript for a given YouTube video ID and saves it in the transcript directory.
+
+    Args:
+        video_id (str): The YouTube video ID.
+
+    Returns:
+        str: The path to the saved transcript file.
+    """
+    transcript_file = os.path.join(TRANSCRIPTS_DIR, f"{video_id}.json")
+    command = f"yt https://www.youtube.com/watch?v={video_id} > {transcript_file}"
+    try:
+        subprocess.run(command, shell=True, check=True)
+        logging.info(f"Transcript saved to: {transcript_file}")
+        return transcript_file
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Failed to fetch transcript for video ID {video_id}: {e}")
+        return None
 
 def process_url(url: str, force: bool) -> None:
     """
@@ -440,9 +447,10 @@ def process_url(url: str, force: bool) -> None:
                     title = re.sub('[^0-9a-zA-Z]+', ' ', title).strip()
                     video_url = f"https://www.youtube.com/watch?v={video_id}"
                     if not url_exists_in_file(video_url, UNIFIED) or force:
-                        append_to_file(UNIFIED, f"{current_time}|[{video_url}]|({title})|{uploader}|YouTube\n")
-                        print(f"{current_time}|[{video_url}]|({title})|{uploader}|YouTube")
-                        logging.info(f"Added video URL: {video_url}")
+                        transcript_file = fetch_youtube_transcript(video_id)
+                        append_to_file(UNIFIED, f"{current_time}|[{video_url}]|({title})|{uploader}|YouTube|{transcript_file}\n")
+                        print(f"{current_time}|[{video_url}]|({title})|{uploader}|YouTube|{transcript_file}")
+                        logging.info(f"Added video URL: {video_url} with transcript at {transcript_file}")
                     else:
                         print(f"Error: URL {video_url} already recorded.")
                         logging.warning(f"Duplicate URL: {video_url}")
@@ -451,9 +459,10 @@ def process_url(url: str, force: bool) -> None:
                 title = re.sub('[^0-9a-zA-Z]+', ' ', title).strip()
                 video_url = f"https://www.youtube.com/watch?v={video_id}"
                 if not url_exists_in_file(video_url, UNIFIED) or force:
-                    append_to_file(UNIFIED, f"{current_time}|[{video_url}]|({title})|{uploader}|YouTube\n")
-                    print(f"{current_time}|[{video_url}]|({title})|{uploader}|YouTube")
-                    logging.info(f"Added video URL: {video_url}")
+                    transcript_file = fetch_youtube_transcript(video_id)
+                    append_to_file(UNIFIED, f"{current_time}|[{video_url}]|({title})|{uploader}|YouTube|{transcript_file}\n")
+                    print(f"{current_time}|[{video_url}]|({title})|{uploader}|YouTube|{transcript_file}")
+                    logging.info(f"Added video URL: {video_url} with transcript at {transcript_file}")
                 else:
                     print(f"Error: URL {video_url} already recorded.")
                     logging.warning(f"Duplicate URL: {video_url}")
@@ -486,7 +495,6 @@ def process_url(url: str, force: bool) -> None:
         else:
             print("Invalid URL")
             logging.error(f"Invalid URL: {simplified_url} with title: {title}")
-
 
 
 def create_backup(file_path: str) -> None:

@@ -168,10 +168,11 @@ def get_youtube_data(url: str) -> tuple:
     youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, developerKey=DEVELOPER_KEY)
     parsed_url = urlparse(url)
     query_params = parse_qs(parsed_url.query)
-
+    
+    # Check if it's a playlist
     if 'list' in query_params:
         return get_youtube_playlist_data(query_params['list'][0], youtube)
-
+    
     video_id = query_params.get('v')
     if not video_id:
         # Check if it's a Shorts URL
@@ -179,13 +180,19 @@ def get_youtube_data(url: str) -> tuple:
         if shorts_match:
             video_id = shorts_match.group(1)
         else:
-            raise ValueError("Invalid YouTube URL")
-
+            # Check if it's a Live URL
+            live_match = re.match(r'/live/([^/?]+)', parsed_url.path)
+            if live_match:
+                video_id = live_match.group(1)
+            else:
+                raise ValueError("Invalid YouTube URL")
+    
     if isinstance(video_id, list):
         video_id = video_id[0]  # Extract video ID from the list
     video_response = youtube.videos().list(part='snippet', id=video_id).execute()
     video_data = video_response['items'][0]['snippet']
     return video_id, video_data['title'], video_data['channelTitle']
+
 
 def get_youtube_playlist_data(playlist_id: str, youtube) -> tuple:
     """

@@ -120,6 +120,10 @@ python ref.py <url> [-f] [-e] [--version]
   - `references/links.md`: Markdown file for recording general URLs.
 - `transcripts/`: Directory containing the YouTube video transcripts.
 
+## Browser Extension
+
+We have also created a browser extension to copy URLs of all open tabs to the clipboard. This extension is compatible with both Chrome and Firefox. For more details on how to install and use the browser extension, please refer to the [browser extension documentation](extension/README.md).
+
 ## Contributing
 
 Contributions to this URL reference tool are welcome! Feel free to open issues or submit pull requests for any enhancements, bug fixes, or additional features.
@@ -127,3 +131,4 @@ Contributions to this URL reference tool are welcome! Feel free to open issues o
 ## License
 
 This project is licensed under the MIT License.
+

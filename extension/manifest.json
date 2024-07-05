@@ -2,6 +2,7 @@
   "manifest_version": 2,
   "name": "Copy Tab URLs",
   "version": "1.0",
+  "description": "A simple browser extension to copy the URLs of all open tabs to the clipboard.",
   "permissions": [
     "tabs",
     "clipboardWrite"
@@ -18,4 +19,4 @@
     "persistent": false
   }
 }
-
+ 

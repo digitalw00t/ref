@@ -60,32 +60,49 @@ if [[ "$ref_url" != https://* ]]; then
     ref_url="https://www.youtube.com/watch?v=$ref_url"
 fi
 
-ref_output=$(ref "$ref_url")
+ref_output=$(ref "$ref_url" 2>&1)
+if [[ "$ref_output" == *"Error: URL"* && "$ref_output" == *"already recorded"* ]]; then
+    # Extract the existing transcript file path from the error message
+    transcript_file=$(echo "$ref_output" | sed -n 's/.*already recorded: \(.*\)/\1/p')
+    echo "URL already recorded. Using existing transcript: $transcript_file"
+elif [ $? -ne 0 ]; then
+    echo "Failed to run ref command: $ref_output"
+    exit 1
+else
+    transcript_file="$transcripts_dir/$(echo "$ref_output" | awk -F'|' '{print $NF}' | sed 's:/*$::')"
+fi
 
-if [ $? -ne 0 ]; then
-    echo "Failed to run ref command"
+transcript_file=$(remove_double_slashes "$transcript_file")
+
+if [ ! -f "$transcript_file" ]; then
+    echo "Transcript file not found: $transcript_file"
     exit 1
 fi
 
-transcript_file="$transcripts_dir/$(echo "$ref_output" | awk -F'|' '{print $NF}' | sed 's:/*$::')"
-transcript_file=$(remove_double_slashes "$transcript_file")
 key=$(get_key "$ref_output")
-
 if [ -z "$key" ]; then
-    echo "Failed to extract key from ref output"
-    exit 1
+    # If we couldn't get the key from ref_output, try to extract it from the transcript file name
+    key=$(basename "$transcript_file" | sed 's/\.[^.]*$//')
 fi
 
 output_file="${transcript_file%.*}-extract_wisdom-openai.md"
 output_file=$(remove_double_slashes "$output_file")
 
+# display $output_file
+echo "Transcript File: $transcript_file"
+echo "OUTPUT FILE: $output_file"
+
+# Check if the output file already exists
+if [ -f "$output_file" ]; then
+    echo "Output file already exists: $output_file"
+    exit 1
+fi
+
 echo "Running the command:"
 extract_wisdom_from_transcript "$transcript_file" "$output_file"
-
 if [ $? -eq 0 ]; then
     echo "Successfully created $output_file"
 else
     echo "Failed to extract wisdom"
     exit 1
 fi
-

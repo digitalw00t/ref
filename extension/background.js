@@ -1,5 +1,6 @@
 chrome.browserAction.onClicked.addListener(() => {
-  chrome.tabs.query({}, (tabs) => {
+  chrome.windows.getCurrent({populate: true}, (currentWindow) => {
+    const tabs = currentWindow.tabs;
     if (chrome.runtime.lastError) {
       console.error(chrome.runtime.lastError);
       alert('Failed to query tabs.');
@@ -12,8 +13,12 @@ chrome.browserAction.onClicked.addListener(() => {
 
 function copyToClipboard(text) {
   const textarea = document.createElement('textarea');
-  textarea.value = text;
+  textarea.value = ''; // Clear the clipboard first
   document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand('copy'); // Blank the clipboard
+
+  textarea.value = text;
   textarea.select();
   try {
     const successful = document.execCommand('copy');
@@ -29,3 +34,4 @@ function copyToClipboard(text) {
   }
   document.body.removeChild(textarea);
 }
+

@@ -22,6 +22,8 @@ from requests.packages.urllib3.util.retry import Retry
 import subprocess
 import time
 import select
+from urllib3.exceptions import InsecureRequestWarning
+
 
 # Library versions
 import urllib3

@@ -626,10 +626,12 @@ def main() -> None:
         elif args.url:
             process_url(args.url, args.force)
         else:
+            timeout = 10
+            timeout = None
             while True:
                 try:
                     print("Enter a URL to record (or press Ctrl+C to quit): ")
-                    ready, _, _ = select.select([sys.stdin], [], [], 10)  # Timeout of 10 seconds
+                    ready, _, _ = select.select([sys.stdin], [], [], timeout)  # Timeout of 10 seconds
                     if ready:
                         url = sys.stdin.readline().strip()
                         force = False

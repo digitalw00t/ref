@@ -315,6 +315,37 @@ def search_entries(search_term: str, search_field: str, file_path: str) -> dict:
 
     return results
 
+def update_transcript(url: str) -> None:
+    """
+    Updates the transcript for an existing YouTube entry in the references.md file.
+
+    Args:
+        url (str): The URL of the YouTube video to update.
+
+    Returns:
+        None
+    """
+    with open(UNIFIED, 'r') as file:
+        lines = file.readlines()
+
+    updated = False
+    with open(UNIFIED, 'w') as file:
+        for line in lines:
+            if url in line and line.strip().endswith("|None"):
+                video_id = re.search(r'v=([^&]+)', url).group(1)
+                transcript_file = fetch_youtube_transcript(video_id)
+                if transcript_file:
+                    line = line.replace("|None", f"|{transcript_file}")
+                    updated = True
+                    logging.info(f"Transcript updated for URL: {url}")
+            file.write(line)
+
+    if updated:
+        print(f"Transcript for {url} has been updated.")
+    else:
+        print(f"No matching entry found for {url} or transcript already exists.")
+
+
 def parse_arguments() -> argparse.Namespace:
     """
     Parses command-line arguments and returns the parsed arguments as a Namespace object.
@@ -335,6 +366,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--search-source", help="Search entries by source.")
     parser.add_argument("--search-uploader", help="Search entries by uploader.")
     parser.add_argument("--search", help="Search entries across all fields (URL, title, date, source, uploader).")
+    parser.add_argument("--transcript", action="store_true", help="Update the transcript for an existing YouTube entry.")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__VERSION__}")
     args = parser.parse_args()
     if args.edit:
@@ -343,6 +375,7 @@ def parse_arguments() -> argparse.Namespace:
     if args.url:
         args.url = args.url.replace('&', '\\&')
     return args
+
 
 def url_exists_in_file(url: str, file_path: str) -> bool:
     """
@@ -467,11 +500,14 @@ def process_url(url: str, force: bool) -> None:
                 for video_id, title, uploader in videos:
                     title = re.sub('[^0-9a-zA-Z]+', ' ', title).strip()
                     video_url = f"https://www.youtube.com/watch?v={video_id}"
-                    if not url_exists_in_file(video_url, UNIFIED) or force:
-                        transcript_file = fetch_youtube_transcript(video_id)
-                        append_to_file(UNIFIED, f"{current_time}|[{video_url}]|({title})|{uploader}|YouTube|{transcript_file}\n")
-                        print(f"{current_time}|[{video_url}]|({title})|{uploader}|YouTube|{transcript_file}")
-                        logging.info(f"Added video URL: {video_url} with transcript at {transcript_file}")
+                    transcript_file = os.path.join(TRANSCRIPTS_DIR, f"{video_id}.json")
+                    transcript_file_exists = os.path.exists(transcript_file)
+                    url_exists = url_exists_in_file(video_url, UNIFIED)
+
+                    if not url_exists or force or not transcript_file_exists or not reference_has_transcript(video_url):
+                        if not transcript_file_exists:
+                            transcript_file = fetch_youtube_transcript(video_id)
+                        update_reference_entry(video_url, title, uploader, transcript_file)
                     else:
                         print(f"Error: URL {video_url} already recorded.")
                         logging.warning(f"Duplicate URL: {video_url}")
@@ -479,11 +515,14 @@ def process_url(url: str, force: bool) -> None:
                 video_id, title, uploader = result
                 title = re.sub('[^0-9a-zA-Z]+', ' ', title).strip()
                 video_url = f"https://www.youtube.com/watch?v={video_id}"
-                if not url_exists_in_file(video_url, UNIFIED) or force:
-                    transcript_file = fetch_youtube_transcript(video_id)
-                    append_to_file(UNIFIED, f"{current_time}|[{video_url}]|({title})|{uploader}|YouTube|{transcript_file}\n")
-                    print(f"{current_time}|[{video_url}]|({title})|{uploader}|YouTube|{transcript_file}")
-                    logging.info(f"Added video URL: {video_url} with transcript at {transcript_file}")
+                transcript_file = os.path.join(TRANSCRIPTS_DIR, f"{video_id}.json")
+                transcript_file_exists = os.path.exists(transcript_file)
+                url_exists = url_exists_in_file(video_url, UNIFIED)
+
+                if not url_exists or force or not transcript_file_exists or not reference_has_transcript(video_url):
+                    if not transcript_file_exists:
+                        transcript_file = fetch_youtube_transcript(video_id)
+                    update_reference_entry(video_url, title, uploader, transcript_file)
                 else:
                     print(f"Error: URL {video_url} already recorded.")
                     logging.warning(f"Duplicate URL: {video_url}")
@@ -516,6 +555,58 @@ def process_url(url: str, force: bool) -> None:
         else:
             print("Invalid URL")
             logging.error(f"Invalid URL: {simplified_url} with title: {title}")
+
+def update_reference_entry(video_url: str, title: str, uploader: str, transcript_file: str) -> None:
+    """
+    Updates or adds a YouTube video entry in the references.md file with the transcript file reference.
+
+    Args:
+        video_url (str): The URL of the YouTube video.
+        title (str): The title of the YouTube video.
+        uploader (str): The uploader of the YouTube video.
+        transcript_file (str): The path to the transcript file.
+
+    Returns:
+        None
+    """
+    updated = False
+    with open(UNIFIED, 'r') as file:
+        lines = file.readlines()
+
+    with open(UNIFIED, 'w') as file:
+        for line in lines:
+            if video_url in line:
+                if line.strip().endswith("|None"):
+                    line = line.replace("|None", f"|{transcript_file}")
+                elif not line.strip().endswith(f"|{transcript_file}"):
+                    line = line.rstrip() + f"|{transcript_file}\n"
+                updated = True
+            file.write(line)
+
+    if not updated:
+        append_to_file(UNIFIED, f"{datetime.now().strftime('%Y-%m-%dT%H:%M:%S')}|[{video_url}]|({title})|{uploader}|YouTube|{transcript_file}\n")
+
+    logging.info(f"Updated reference entry for URL: {video_url} with transcript file: {transcript_file}")
+    print(f"Updated reference entry for URL: {video_url} with transcript file: {transcript_file}")
+
+def reference_has_transcript(url: str) -> bool:
+    """
+    Checks if a reference entry for a given URL has a transcript file referenced.
+
+    Args:
+        url (str): The URL to check.
+
+    Returns:
+        bool: True if the reference entry has a transcript file referenced, False otherwise.
+    """
+    with open(UNIFIED, "r") as f:
+        for line in f:
+            if url in line:
+                parts = line.strip().split('|')
+                if len(parts) > 5 and parts[-1] != "None":
+                    return True
+    return False
+
 
 
 def create_backup(file_path: str) -> None:
@@ -623,6 +714,8 @@ def main() -> None:
                 print(line.strip())
                 for hit_type in unique_hit_types:
                     print(f"-Hit Type: {hit_type}")
+        elif args.transcript and args.url:
+            update_transcript(args.url)
         elif args.url:
             process_url(args.url, args.force)
         else:
@@ -646,6 +739,7 @@ def main() -> None:
     except KeyboardInterrupt:
         print("\nExiting...")
         sys.exit(0)
+
 
 if __name__ == "__main__":
     if DEVELOPER_KEY is None:

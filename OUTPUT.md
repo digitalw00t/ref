@@ -39,17 +39,21 @@ Each line in the `references.md` file represents a single entry and follows a sp
    - **Format**: Plain text
    - **Description**: Specifies the source type. It will be either `YouTube` if the URL is a YouTube link or `General` for other types of URLs.
 
+6. **Miscellaneous Information**:
+   - **Format**: Plain text
+   - **Description**: If a youtube video is specified, then the transcript file with path is specified
+
 **Example Entries:**
 
 1. **YouTube Video Entry:**
 ```
-2024-05-17T14:53:10|[https://www.youtube.com/watch?v=example_id]|(Example Video Title)|ExampleUploader|YouTube
+2024-05-17T14:53:10|[https://www.youtube.com/watch?v=example_id]|(Example Video Title)|ExampleUploader|YouTube|/<path>/<video id>.json
 ```
 
 2. **YouTube Playlist Entry:**
 ```
-2024-05-17T15:00:00|[https://www.youtube.com/watch?v=video1_id]|(Video 1 Title)|UploaderName|YouTube
-2024-05-17T15:01:00|[https://www.youtube.com/watch?v=video2_id]|(Video 2 Title)|UploaderName|YouTube
+2024-05-17T15:00:00|[https://www.youtube.com/watch?v=video1_id]|(Video 1 Title)|UploaderName|YouTube|/<path>/<video id>.json
+2024-05-17T15:01:00|[https://www.youtube.com/watch?v=video2_id]|(Video 2 Title)|UploaderName|YouTube|/<path>/<video id>.json
 ```
 
 3. **General URL Entry:**

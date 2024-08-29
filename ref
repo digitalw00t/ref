@@ -600,8 +600,10 @@ def process_url(url: str, force: bool) -> None:
                     if not transcript_file_exists:
                         transcript_file = fetch_youtube_transcript(video_id)
                     update_reference_entry(video_url, title, uploader, transcript_file)
+                    print(f"Title: {title}")  # Add this line to display the title
                 else:
                     print(f"Error: URL {video_url} already recorded.")
+                    print(f"Title: {title}")  # Add this line to display the title even for existing entries
                     logging.warning(f"Duplicate URL: {video_url}")
         except ValueError as e:
             print(f"Error: {e}")

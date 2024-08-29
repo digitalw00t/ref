@@ -3,11 +3,14 @@
 # author: draeician (July 22, 2023)
 # purpose: to allow for fast CLI recording from the command line for later reference
 
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
+#from selenium import webdriver
+#from selenium.webdriver.chrome.service import Service
+#from selenium.webdriver.chrome.options import Options
 
 
+import requests
+from bs4 import BeautifulSoup
+from urllib.parse import urlparse, urlunparse
 import os
 import re
 import sys
@@ -183,9 +186,6 @@ def resolve_redirect(url: str) -> str:
 #        logging.error(f"Error fetching title with curl: {e}")
 #        return "Error fetching title"
 
-import requests
-from bs4 import BeautifulSoup
-from urllib.parse import urlparse, urlunparse
 
 def get_title_from_url(url: str) -> str:
     """
@@ -202,10 +202,22 @@ def get_title_from_url(url: str) -> str:
     parsed_url = urlparse(url)
     url_without_fragment = urlunparse(parsed_url._replace(fragment=''))
 
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
+    }
+
+    logging.debug(f"Requesting URL: {url_without_fragment} with headers: {headers}")
+
     try:
         # Fetch the page content
-        response = requests.get(url_without_fragment)
-        response.raise_for_status()  # Raise an error for bad responses
+        response = requests.get(url_without_fragment, headers=headers)
+        logging.debug(f"Response Status Code: {response.status_code}")
+        logging.debug(f"Response Headers: {response.headers}")
+
+        if response.status_code == 404:
+            logging.error(f"404 Error: Page not found for URL: {url}")
+            return "404 Error: Page not found"
+        response.raise_for_status()  # Raise an error for other bad responses
 
         # Parse the content with BeautifulSoup
         soup = BeautifulSoup(response.content, 'html.parser')
